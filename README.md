@@ -8,6 +8,15 @@ Programa com o objetivo manipular imagens de jogos de PS2 destinados ao uso com 
 primeiramente será desenvolvido a interface gráfica usando o wxPython.
 
 
+DEPENDÊNCIAS
+
+Alguns módulos devem estar presentes para o devido funcionamento, são eles:
+
+wxpython3 (fonte: http://www.wxpython.org/download.php)
+
+pywin32 (em windows) (fonte: http://sourceforge.net/projects/pywin32/files/?source=navbar)
+
+
 QUAL A MOTIVAÇÃO?
 
 Os motivos pelos quais me levaram a fazer esse projeto foram vários, como:
