@@ -1,3 +1,8 @@
+# -*- coding: utf-8 -*-
+# Copyright (c) 2013-2014 Barnaby Gale
+# https://github.com/barneygale
+# Licença BSD
+
 import urllib
 import struct
 
