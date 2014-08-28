@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*- 
+
 import wx
 import wx.html
 import os
-import iso9660
+from contrib import iso9660
 import re
 
 corrente = os.getcwd()
@@ -14,7 +15,7 @@ class meu_splash(wx.App):
 		
 		bmp = wx.Image ( corrente +'\imagens\conexao.png', wx.BITMAP_TYPE_ANY).ConvertToBitmap()
 		
-		wx.SplashScreen ( bmp, wx.SPLASH_CENTRE_ON_SCREEN | wx.SPLASH_TIMEOUT, 1200, None, style = wx.NO_BORDER | wx.SIMPLE_BORDER | wx.STAY_ON_TOP ) 
+		wx.SplashScreen ( bmp, wx.CENTER_ON_SCREEN | wx.SPLASH_TIMEOUT, 1200, None, style = wx.NO_BORDER | wx.SIMPLE_BORDER | wx.STAY_ON_TOP ) 
 		wx.Yield() 
 		return True
 
@@ -32,40 +33,21 @@ class meu_programa(wx.App):
 
 class meu_frame(wx.Frame):
 	def __init__ (self, title, pos, size):
-
-		self.text = '''
-		<html>
-		<body bgcolor="#ACAA60">
-		<center><table bgcolor="#455481" width="100%" cellspacing="0"
-		cellpadding="0" border="1">
-		<tr>
-		<td align="center"><h1>Sketch!</h1></td>
-		</tr>
-		</table>
-		</center>
-		<p><b>Sketch</b> is a demonstration program for
-		<b>wxPython In Action</b>
-		Chapter 6. It is based on the SuperDoodle demo included
-		with wxPython, available at http://www.wxpython.org/
-		</p>
-		<p><b>SuperDoodle</b> and <b>wxPython</b> are brought to you by
-		<b>Robin Dunn</b> and <b>Total Control Software</b>, Copyright
-		&copy; 1997-2006.</p>
-		</body>
-		</html>'''
-		self.title = "PhanterPS2"
-		imagem1 = wx.Image ( corrente+'\imagens\isops2.png', wx.BITMAP_TYPE_ANY).ConvertToBitmap()
-		imagem2 = wx.Image ( corrente+'\imagens\salvar.png', wx.BITMAP_TYPE_ANY).ConvertToBitmap()
-		imagem3 = wx.Image ( corrente+'\imagens\sobre.png', wx.BITMAP_TYPE_ANY).ConvertToBitmap()
-
 		wx.Frame.__init__(self, None, -1, title, pos, size)
-		painel = wx.Panel(self)
+
+		imagem1 = wx.Image(corrente+'\imagens\isops2.png', wx.BITMAP_TYPE_PNG).ConvertToBitmap()
+		imagem2 = wx.Image(corrente+'\imagens\salvar.png', wx.BITMAP_TYPE_ANY).ConvertToBitmap()
+		imagem3 = wx.Image(corrente+'\imagens\sobre.png', wx.BITMAP_TYPE_ANY).ConvertToBitmap()
+
+		self.title = title
+
 		barra_de_status = self.CreateStatusBar()
 		self.SetStatusText("Bem vindo ao PhanterPS2")
 		barra_de_ferramentas = self.CreateToolBar()
+		barra_de_ferramentas.SetBackgroundColour('#BEBEBE')
 		tool1 = barra_de_ferramentas.AddSimpleTool(wx.NewId(), imagem1 , "Novo Iso", u"Selecionar imagens iso dos jogos")
-		barra_de_ferramentas.AddSimpleTool(wx.NewId(), imagem2 , "Salvar", u"Salvar as configurações")
-		barra_de_ferramentas.AddSimpleTool(wx.NewId(), imagem3 , "Sobre", u"Sobre o programa e autor")
+		tool2 = barra_de_ferramentas.AddSimpleTool(wx.NewId(), imagem2 , "Salvar", u"Salvar as configurações")
+		tool3 = barra_de_ferramentas.AddSimpleTool(wx.NewId(), imagem3 , "Sobre", u"Sobre o programa e autor")
 		barra_de_ferramentas.Realize()
 		Barra_de_menu = wx.MenuBar()
 		menu1 = wx.Menu()
@@ -75,19 +57,21 @@ class meu_frame(wx.Frame):
 
 		self.Bind(wx.EVT_MENU, self.AbrirIso, Item_submenu1)
 		self.Bind(wx.EVT_TOOL, self.AbrirIso, tool1)
+		self.Bind(wx.EVT_TOOL, self.Sobre, tool3)
 		self.SetMenuBar(Barra_de_menu)
+		try:
+			with open('phanterps2.cfg', 'r') as arquivo_cfg:
+				painel = meu_painel(self, nome_do_jogo='Age_of_empires')
 
-		html = wx.html.HtmlWindow(self)
-		html.SetPage(self.text)
-		button = wx.Button(self, wx.ID_OK, "Okay")
-		sizer = wx.BoxSizer(wx.VERTICAL)
-		sizer.Add(html, 1, wx.EXPAND|wx.ALL, 5)
-		sizer.Add(button, 0, wx.ALIGN_CENTER|wx.ALL, 5)
-		self.SetSizer(sizer)
-		self.Layout()
+		except IOError :
+			with open('phanterps2.cfg', 'w') as arquivo_cfg:
+				arquivo_cfg.close()
+			painel = meu_painel(self, nome_do_jogo='Sem jogo')
+			
+		self.CenterOnScreen()
 
 
-#ações
+	#ações
 
 	wildcard = "Imagem iso (*.iso)|*.iso|All files (*.*)|*.*"
 	def AbrirIso (self, event):
@@ -126,6 +110,72 @@ class meu_frame(wx.Frame):
 			self.dir = dlg.GetPath()
 			self.SetTitle(self.title + ' -- ' + self.filename)
 			dlg.Destroy()
+
+	def Sobre (self, event):
+		x = sobre()
+		x.Show()
+
+class meu_painel(wx.Panel):
+	def __init__ (self, parent, codigo_do_jogo='XXX_999.99', nome_do_jogo='NOME_DO_JOGO'):
+		wx.Panel.__init__(self, parent)
+
+		button1 = wx.Button(self, wx.ID_OK, nome_do_jogo)
+		sizer = wx.BoxSizer(wx.VERTICAL)
+		sizer.Add(button1, 0, wx.ALIGN_CENTER|wx.ALL, 5)
+		self.Layout()
+		self.SetSizer(sizer)
+		self.Bind(wx.EVT_BUTTON, self.destruir, button1)
+		
+	def destruir(self, event):
+		self.Destroy()
+				
+
+class sobre(wx.Frame):
+	def __init__ (self):
+		wx.Frame.__init__(self, None, -1, 'Sobre', (-1,-1), (400,400),style= wx.SYSTEM_MENU | wx.CAPTION | wx.CLOSE_BOX )
+		self.codigo_html = u'''
+		<html>
+		<body bgcolor="#FFFFFF">
+		<center><table bgcolor="#AAAAAA"  width="100%" cellspacing="0"
+		cellpadding="0" border="1">
+		<tr>
+		<td align="center"><h2>PhanterPS2</h2></br><h5>versão 1.0</h5></td>
+
+		</tr>
+		</table>
+		</center>
+		<p>O <b>PhanterPS2</b> foi desenvolvido por <b>PhanterJR</b>, sócio-proprietário da Conexão Didata.
+		</p>
+		<p>PhanterPS2: Copyright &copy; 2014 PhanterJR - Licença GPL2</p>
+		<p align="center"><b>CONTRIBUIÇÃO</b></p>
+		<p><b>Junior Polegato</b><br>
+		Módulo pycrc32
+		Copyright &copy; 2014 Junior Polegato<br>
+		Licença LGPL<br>
+		https://github.com/JuniorPolegato</p>
+		<p><b>Barnaby Gale</b><br>
+		Módulo iso9660
+		Copyright &copy; 2013-2014 Barnaby Gale<br>
+		Licença BSD<br>
+		https://github.com/barneygale
+		</p>
+
+		</body>
+		</html>'''
+
+		html = wx.html.HtmlWindow(self)
+		html.SetPage(self.codigo_html)
+		button1 = wx.Button(self, wx.ID_OK, "OK")
+		sizer = wx.BoxSizer(wx.VERTICAL)
+		sizer.Add(html, 1, wx.EXPAND|wx.ALL, 5)
+		sizer.Add(button1, 0, wx.ALIGN_CENTER|wx.ALL, 5)
+		self.SetSizer(sizer)
+		self.Layout()
+		self.Bind(wx.EVT_BUTTON, self.destruir, button1)
+		self.CenterOnScreen() # coloca no centro da tela
+
+	def destruir(self, event):
+		self.Destroy()
 
 # Logica
 
