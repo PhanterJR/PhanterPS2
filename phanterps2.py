@@ -38,27 +38,54 @@ class meu_frame(wx.Frame):
 		imagem1 = wx.Image(corrente+'\imagens\isops2.png', wx.BITMAP_TYPE_PNG).ConvertToBitmap()
 		imagem2 = wx.Image(corrente+'\imagens\salvar.png', wx.BITMAP_TYPE_ANY).ConvertToBitmap()
 		imagem3 = wx.Image(corrente+'\imagens\sobre.png', wx.BITMAP_TYPE_ANY).ConvertToBitmap()
+		imagem4 = wx.Image(corrente+'\imagens\config.png', wx.BITMAP_TYPE_ANY).ConvertToBitmap()
+
+		new_imagem1 = wx.ImageFromBitmap(imagem1).Scale(16, 16, wx.IMAGE_QUALITY_HIGH).ConvertToBitmap() #diminui a imagem para 16x16#
+		new_imagem2 = wx.ImageFromBitmap(imagem2).Scale(16, 16, wx.IMAGE_QUALITY_HIGH).ConvertToBitmap() #diminui a imagem para 16x16#
+		new_imagem3 = wx.ImageFromBitmap(imagem3).Scale(16, 16, wx.IMAGE_QUALITY_HIGH).ConvertToBitmap() #diminui a imagem para 16x16#
+		new_imagem4 = wx.ImageFromBitmap(imagem4).Scale(16, 16, wx.IMAGE_QUALITY_HIGH).ConvertToBitmap() #diminui a imagem para 16x16#
 
 		self.title = title
 
 		barra_de_status = self.CreateStatusBar()
-		self.SetStatusText("Bem vindo ao PhanterPS2")
+		self.SetStatusText(Tradutor("Bem vindo ao PhanterPS2"))
 		barra_de_ferramentas = self.CreateToolBar()
 		barra_de_ferramentas.SetBackgroundColour('#BEBEBE')
-		tool1 = barra_de_ferramentas.AddSimpleTool(wx.NewId(), imagem1 , "Novo Iso", u"Selecionar imagens iso dos jogos")
-		tool2 = barra_de_ferramentas.AddSimpleTool(wx.NewId(), imagem2 , "Salvar", u"Salvar as configurações")
+
+		tool1 = barra_de_ferramentas.AddSimpleTool(wx.NewId(), imagem1 , Tradutor("Adicionar novos jogos iso"), u"Selecionar imagens iso dos jogos")
+		tool2 = barra_de_ferramentas.AddSimpleTool(wx.NewId(), imagem2 , Tradutor("Salvar"), u"Salvar as configurações")
+		tool4 = barra_de_ferramentas.AddSimpleTool(wx.NewId(), imagem4, u"Configurações", "Configurar o PhanterPS2")
 		tool3 = barra_de_ferramentas.AddSimpleTool(wx.NewId(), imagem3 , "Sobre", u"Sobre o programa e autor")
+
 		barra_de_ferramentas.Realize()
+
 		Barra_de_menu = wx.MenuBar()
 		menu1 = wx.Menu()
-		Item_submenu1 = menu1.Append(-1, "A&dicionar novo(s) iso(s)", u"Selecionar imagens iso dos jogos")
+		Item_submenu1 = wx.MenuItem(menu1, -1, "A&dicionar novo(s) iso(s)\tCtrl+A", u"Selecionar imagens iso dos jogos")
+
+		Item_submenu1.SetBitmap(new_imagem1)
+		menu1.AppendItem(Item_submenu1)
+
 		Item_submenu2 = menu1.Append(-1, "Salvar", u"Salvar configurações")
 		Barra_de_menu.Append(menu1, "&Arquivo")
 
+		menu2 = wx.Menu()
+		# Show how to put an icon in the menu
+		item = wx.MenuItem(menu2, -1, "&Smile!\tCtrl+S", "This one has an icon")
+		item.SetBitmap(imagem4)
+		menu2.AppendItem(item)
+		Barra_de_menu.Append(menu2, "Ajuda")
+
+
+		#Binds
+
 		self.Bind(wx.EVT_MENU, self.AbrirIso, Item_submenu1)
+
 		self.Bind(wx.EVT_TOOL, self.AbrirIso, tool1)
 		self.Bind(wx.EVT_TOOL, self.Sobre, tool3)
+
 		self.SetMenuBar(Barra_de_menu)
+
 		try:
 			with open('phanterps2.cfg', 'r') as arquivo_cfg:
 				painel = meu_painel(self, nome_do_jogo='Age_of_empires')
@@ -177,11 +204,51 @@ class sobre(wx.Frame):
 	def destruir(self, event):
 		self.Destroy()
 
+class painel_configuracao (wx.Frame):
+	def __init__ (self):
+		wx.Frame.__init__(self, None, -1, u'Configuração do PhanterPS2', (400,400), style= wx.SYSTEM_MENU | wx.CAPTION | wx.CLOSE_BOX)
+
+
 # Logica
 
 procura_cod_e_nome = re.compile(r'([a-zA-Z]{4}_[0-9]{3}\.[0-9]{2}\..*\.[iI][sS][oO])')
 procura_nome_e_cod_no_ul = re.compile(r'([ a-zA-Z0-9]*.*ul\.[ a-zA-Z0-9]{4}_[0-9]{3}\.[0-9]{2})')
 procura_apenas_cod = re.compile(r'^/([a-zA-Z]{4}_[0-9]{3}\.[0-9]{2})')
+
+
+def Tradutor (palavra, dicionario = ''):
+	"""
+
+	"""
+	print palavra
+	if dicionario=='':
+		traducao = palavra
+		try:
+			with open(corrente +'\language\sample.lng', 'r') as palavraprocurada:
+				texto = palavraprocurada.read()
+				print texto
+				patern = '(%s:.*)' %(palavra)
+				x = re.findall(patern, texto)
+				print x
+				if not x == []:
+					pass
+				else:
+					print 'else'
+					palavraprocurada.close()
+					with open(corrente +'\language\sample.lng', 'w') as palavraprocurada:
+						atual=palavraprocurada.read()
+						print atual
+						palavraprocurada.write(atual[-1]+'%s: %s\n' %(palavra,palavra))
+		except IOError:
+
+			with open(corrente +'\language\sample.lng', 'w') as palavraprocurada:
+				palavraprocurada.write('%s: %s\n' %(palavra,palavra))
+	else:
+		with open(corrente +'\language\%s' %(dicionario), 'r') as palavraprocurada:
+
+			pass
+
+	return traducao
 
 def procura_cod_in_iso(endereco):
 	x = iso9660.ISO9660(endereco)
@@ -241,7 +308,8 @@ def verifica_jogo(endereco_do_jogo):
 	return resultado_final
 
 if __name__ == '__main__':
-	x = meu_splash()
-	x.MainLoop()
-	y = meu_programa()
-	y.MainLoop()
+	#x = meu_splash()
+	#x.MainLoop()
+	#y = meu_programa()
+	#y.MainLoop()
+	Tradutor('oxente')
