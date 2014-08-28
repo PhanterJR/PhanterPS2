@@ -34,11 +34,3 @@ JUNIOR POLEGATO (https://github.com/JuniorPolegato)
 
 BARNABY GALEV(https://github.com/barneygale)
 	Módulo iso9660 (/contrib/iso9660)
-
-
-
-
-
-
-
-
