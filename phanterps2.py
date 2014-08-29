@@ -34,6 +34,8 @@ class meu_programa(wx.App):
 class meu_frame(wx.Frame):
 	def __init__ (self, title, pos, size):
 		wx.Frame.__init__(self, None, -1, title, pos, size)
+		dicionario = 'en-EN.lng'
+
 
 		imagem1 = wx.Image(corrente+'\imagens\isops2.png', wx.BITMAP_TYPE_PNG).ConvertToBitmap()
 		imagem2 = wx.Image(corrente+'\imagens\salvar.png', wx.BITMAP_TYPE_ANY).ConvertToBitmap()
@@ -48,33 +50,33 @@ class meu_frame(wx.Frame):
 		self.title = title
 
 		barra_de_status = self.CreateStatusBar()
-		self.SetStatusText(Tradutor("Bem vindo ao PhanterPS2"))
+		self.SetStatusText(Tradutor("Bem vindo ao PhanterPS2", dicionario))
 		barra_de_ferramentas = self.CreateToolBar()
 		barra_de_ferramentas.SetBackgroundColour('#BEBEBE')
 
-		tool1 = barra_de_ferramentas.AddSimpleTool(wx.NewId(), imagem1 , Tradutor("Adicionar novos jogos iso"), u"Selecionar imagens iso dos jogos")
-		tool2 = barra_de_ferramentas.AddSimpleTool(wx.NewId(), imagem2 , Tradutor("Salvar"), u"Salvar as configurações")
-		tool4 = barra_de_ferramentas.AddSimpleTool(wx.NewId(), imagem4, u"Configurações", "Configurar o PhanterPS2")
-		tool3 = barra_de_ferramentas.AddSimpleTool(wx.NewId(), imagem3 , "Sobre", u"Sobre o programa e autor")
+		tool1 = barra_de_ferramentas.AddSimpleTool(wx.NewId(), imagem1 , Tradutor("Adicionar novos jogos iso", dicionario), Tradutor(u"Selecionar imagens iso dos jogos", dicionario))
+		tool2 = barra_de_ferramentas.AddSimpleTool(wx.NewId(), imagem2 , Tradutor("Salvar", dicionario), Tradutor(u"Salvar as configurações", dicionario))
+		tool4 = barra_de_ferramentas.AddSimpleTool(wx.NewId(), imagem4, Tradutor(u"Configurações", dicionario), Tradutor("Configurar o PhanterPS2", dicionario))
+		tool3 = barra_de_ferramentas.AddSimpleTool(wx.NewId(), imagem3 , Tradutor("Sobre", dicionario), Tradutor(u"Sobre o programa e autor", dicionario))
 
 		barra_de_ferramentas.Realize()
 
 		Barra_de_menu = wx.MenuBar()
 		menu1 = wx.Menu()
-		Item_submenu1 = wx.MenuItem(menu1, -1, "A&dicionar novo(s) iso(s)\tCtrl+A", u"Selecionar imagens iso dos jogos")
+		Item_submenu1 = wx.MenuItem(menu1, -1, Tradutor("A&dicionar novo(s) iso(s)\tCtrl+A", dicionario), Tradutor(u"Selecionar imagens iso dos jogos", dicionario))
 
 		Item_submenu1.SetBitmap(new_imagem1)
 		menu1.AppendItem(Item_submenu1)
 
-		Item_submenu2 = menu1.Append(-1, "Salvar", u"Salvar configurações")
-		Barra_de_menu.Append(menu1, "&Arquivo")
+		Item_submenu2 = menu1.Append(-1, Tradutor("Salvar", dicionario), Tradutor(u"Salvar configurações", dicionario))
+		Barra_de_menu.Append(menu1, Tradutor("&Arquivo", dicionario))
 
 		menu2 = wx.Menu()
 		# Show how to put an icon in the menu
 		item = wx.MenuItem(menu2, -1, "&Smile!\tCtrl+S", "This one has an icon")
 		item.SetBitmap(imagem4)
 		menu2.AppendItem(item)
-		Barra_de_menu.Append(menu2, "Ajuda")
+		Barra_de_menu.Append(menu2, Tradutor("Ajuda", dicionario))
 
 
 		#Binds
@@ -121,10 +123,7 @@ class meu_frame(wx.Frame):
 	def ReadFile(self, arquivosiso):
 		resultados =[]
 		for arquivoiso in arquivosiso:
-			#print "verificando: " + arquivoiso
 			result = verifica_jogo(arquivoiso)
-			#print "resultado: %s" %(result)
-			#print "==============================="
 			resultados.append(result)
 		self.resultados = resultados
 
@@ -132,7 +131,7 @@ class meu_frame(wx.Frame):
 	def SalveConf(self, event):
 		pass
 	def PastaDoJogo (self, event):
-		dlg = wx.DirDialog(self, u"Abrindo arquivo de configuração...", corrente, style=wx.OPEN)
+		dlg = wx.DirDialog(self, Tradutor(u"Abrindo arquivo de configuração...", dicionario), corrente, style=wx.OPEN)
 		if dlg.ShowModal() == wx.ID_OK:
 			self.dir = dlg.GetPath()
 			self.SetTitle(self.title + ' -- ' + self.filename)
@@ -206,7 +205,7 @@ class sobre(wx.Frame):
 
 class painel_configuracao (wx.Frame):
 	def __init__ (self):
-		wx.Frame.__init__(self, None, -1, u'Configuração do PhanterPS2', (400,400), style= wx.SYSTEM_MENU | wx.CAPTION | wx.CLOSE_BOX)
+		wx.Frame.__init__(self, None, -1, Tradutor(u'Configuração do PhanterPS2', dicionario), (400,400), style= wx.SYSTEM_MENU | wx.CAPTION | wx.CLOSE_BOX)
 
 
 # Logica
@@ -216,39 +215,79 @@ procura_nome_e_cod_no_ul = re.compile(r'([ a-zA-Z0-9]*.*ul\.[ a-zA-Z0-9]{4}_[0-9
 procura_apenas_cod = re.compile(r'^/([a-zA-Z]{4}_[0-9]{3}\.[0-9]{2})')
 
 
-def Tradutor (palavra, dicionario = ''):
+def Tradutor (palavra, dicionario = '', isunicode=True):
 	"""
 
 	"""
-	print palavra
+
+	palavra = palavra.encode('utf-8')
+	palavra2 = palavra
+
+	caracteres_para_escape = ['/', '.', '*', '+', '?', '|','(', ')', '[', ']', '{', '}', '\\']
+
+	palavra_em_escape = ''
+	for g in palavra2:
+		achei = 0
+		for f in caracteres_para_escape:
+			if g == f:
+				achei=1
+				
+			else:
+				pass
+		if achei:
+			palavra_em_escape += "\\"+g
+		else:
+			palavra_em_escape+=g
+
+
+
+
+
+
 	if dicionario=='':
 		traducao = palavra
+		texto_lido=''
 		try:
 			with open(corrente +'\language\sample.lng', 'r') as palavraprocurada:
 				texto = palavraprocurada.read()
-				print texto
-				patern = '(%s:.*)' %(palavra)
+
+				patern = '(%s:.*)' %(palavra_em_escape)
 				x = re.findall(patern, texto)
-				print x
+
 				if not x == []:
 					pass
 				else:
-					print 'else'
+					texto_lido = texto
 					palavraprocurada.close()
+
 					with open(corrente +'\language\sample.lng', 'w') as palavraprocurada:
-						atual=palavraprocurada.read()
-						print atual
-						palavraprocurada.write(atual[-1]+'%s: %s\n' %(palavra,palavra))
+						escrever = texto_lido+'%s: %s\n' %(palavra,palavra)
+						palavraprocurada.write(escrever)
 		except IOError:
 
 			with open(corrente +'\language\sample.lng', 'w') as palavraprocurada:
 				palavraprocurada.write('%s: %s\n' %(palavra,palavra))
 	else:
 		with open(corrente +'\language\%s' %(dicionario), 'r') as palavraprocurada:
+			texto = palavraprocurada.read()
 
-			pass
+			patern = '(%s:.*)' %(palavra_em_escape)
+			print 'patern: '+patern
+			x = re.findall(patern, texto)
+			print 'achei: %s'%x
+			if x==[]:
+				traducao = palavra
+			else:
+				y = x[0].find(':')
+				traducao = x[0][y+1:]
+				print traducao
 
-	return traducao
+
+	if isunicode:
+		traducao = traducao.decode('utf-8')
+
+
+	return traducao 
 
 def procura_cod_in_iso(endereco):
 	x = iso9660.ISO9660(endereco)
@@ -308,8 +347,7 @@ def verifica_jogo(endereco_do_jogo):
 	return resultado_final
 
 if __name__ == '__main__':
-	#x = meu_splash()
-	#x.MainLoop()
-	#y = meu_programa()
-	#y.MainLoop()
-	Tradutor('oxente')
+	x = meu_splash()
+	x.MainLoop()
+	y = meu_programa()
+	y.MainLoop()
