@@ -126,8 +126,13 @@ def Tradutor (palavra, dicionario = '', isunicode=True):
 			else:
 				y = x[0].find(' = ')
 				traducao = x[0][y+3:]
+
+
+
 	if isunicode:
 		traducao = traducao.decode('utf-8')
+
+
 	return traducao 
 
 def procura_cod_in_iso(endereco):
