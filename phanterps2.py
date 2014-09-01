@@ -415,12 +415,6 @@ class painel_configuracao (wx.Frame):
 		self.Destroy()
 		wx.PostEvent(self.parent, event)
 
-
-
-
-
-
-
 if __name__ == '__main__':
 
 	x = meu_splash()

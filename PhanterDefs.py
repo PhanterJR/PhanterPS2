@@ -188,6 +188,7 @@ def verifica_jogo(endereco_do_jogo):
 	return resultado_final
 
 def localiza_cover_art (pasta_de_jogos, codigo_do_jogo=''):
+	pasta_do_jogo=pasta_de_jogos+'\ART'
 	if os.path.exists(pasta_de_jogos+'\ART'):
 		lista = os.listdir(pasta_de_jogos+'\ART')
 		cover_encontrados = {}
@@ -207,8 +208,12 @@ def localiza_cover_art (pasta_de_jogos, codigo_do_jogo=''):
 					covex = cover_encontrados[codigo_do_jogo+'_COV.jpg']
 				except KeyError:
 					covex = 'sample.jpg'
-					
-			cove = [pasta_de_jogos+'\ART', covex]
+			if covex == 'sample.jpg':
+				pasta_do_jogo=corrente
+			else:
+				pasta_do_jogo=pasta_de_jogos+'\ART'
+			cove = [pasta_do_jogo, covex]
+			print cove
 
 
 	return cove
