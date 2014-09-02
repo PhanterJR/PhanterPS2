@@ -4,8 +4,10 @@ import os
 import re
 from contrib import iso9660
 from contrib import pycrc32
+import string
+from ctypes import windll
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.ERROR)
 logger = logging.getLogger(__name__)
 
 corrente = os.getcwd()
@@ -346,5 +348,15 @@ def convert_tamanho(valor=''):
 
 	return tamanho
 
+def drivers_do_windows():
+    drives = []
+    bitmask = windll.kernel32.GetLogicalDrives()
+    print bitmask
+    for letter in string.uppercase:
+        if bitmask & 1:
+            drives.append(letter)
+        bitmask >>= 1
+
+    return drives
 
 

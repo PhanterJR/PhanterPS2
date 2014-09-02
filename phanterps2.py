@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*- 
 
+import platform
 import wx
 import wx.html
 import os
 import logging
 from PhanterDefs import Tradutor, configuracoes, imagens_jogos, lista_de_jogos, convert_tamanho, verifica_jogo
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.ERROR)
 logger = logging.getLogger(__name__)
 
 corrente = os.getcwd()
@@ -382,13 +383,32 @@ class painel_configuracao (wx.Frame):
 		pastadefault = conf_prog.pasta_padrao_jogos
 		config_pasta_jogos = conf_prog.leitor_configuracao('pasta_destino_jogos')
 
+
+
 		text0 = wx.StaticText(painel, wx.ID_ANY, Tradutor(u"Pasta de jogos", dicionario), (0, 0))
+
 		self.form0 = wx.TextCtrl( painel, wx.ID_ANY, config_pasta_jogos,(0,0), (250,-1))
 		self.form0.Enabled = False
 		botao0 = wx.Button(painel, wx.ID_ANY, '...', (0,0), (20,20))
 		self.Bind(wx.EVT_BUTTON, self.Pega_pasta_jogo, botao0)
 		text1 = wx.StaticText(painel, wx.ID_ANY, Tradutor(u"Arquivos de Tradução",dicionario), (0, 0))
 		self.form1 = wx.TextCtrl(painel, wx.ID_ANY, "",(0,0), (250,-1))
+		self.form0.Enabled = False
+		linha_horizontal = wx.StaticLine(painel, id=wx.ID_ANY, pos=(0,0), size=(-1,-1),
+										style=wx.LI_HORIZONTAL| wx.BORDER_DOUBLE , name='wx.StaticLineNameStr')
+		text2 = wx.StaticText(painel, wx.ID_ANY, Tradutor(u"Pasta de DVD",dicionario), (0, 0))
+		
+		self.form2 = wx.TextCtrl(painel, wx.ID_ANY, os.path.join(config_pasta_jogos, 'DVD'),(0,0), (250,-1))
+		self.form2.Enabled = False
+		text3 = wx.StaticText(painel, wx.ID_ANY, Tradutor(u"Pasta de CD",dicionario), (0, 0))
+		self.form3 = wx.TextCtrl(painel, wx.ID_ANY, os.path.join(config_pasta_jogos, 'CD'),(0,0), (250,-1))
+		self.form3.Enabled = False
+		text4 = wx.StaticText(painel, wx.ID_ANY, Tradutor(u"Pasta de capas",dicionario), (0, 0))
+		self.form4 = wx.TextCtrl(painel, wx.ID_ANY, os.path.join(config_pasta_jogos, 'ART'),(0,0), (250,-1))
+		self.form4.Enabled = False
+		text5 = wx.StaticText(painel, wx.ID_ANY, Tradutor(u"Pasta de configurações",dicionario), (0, 0))
+		self.form5 = wx.TextCtrl(painel, wx.ID_ANY, os.path.join(config_pasta_jogos, 'CFG'),(0,0), (250,-1))
+		self.form5.Enabled = False
 
 		self.form1.Enabled = False
 		botao1 = wx.Button(painel, wx.ID_ANY, '...', (0,0), (20,20))
@@ -403,8 +423,17 @@ class painel_configuracao (wx.Frame):
 		sizer.Add(botao0, (1, 4), (1,4), wx.ALL, 2)
 		sizer.Add(text1, (2, 1), (1,1), wx.ALIGN_RIGHT, 2)
 		sizer.Add(self.form1, (2, 2), (1,2), wx.ALL|wx.EXPAND, 2)
-		sizer.Add(botao1, (2, 4), (1,4), wx.ALL, 2)	
-		sizer.Add(botaook, (3,0), (2,7), wx.ALL|wx.ALIGN_CENTER, 10)	
+		sizer.Add(botao1, (2, 4), (1,4), wx.ALL, 2)
+		sizer.Add(linha_horizontal, (3, 1), (1,5), wx.ALL|wx.EXPAND|wx.ALIGN_CENTER, 4)
+		sizer.Add(text2, (4, 1), (1,1), wx.ALIGN_RIGHT, 2)
+		sizer.Add(self.form2, (4, 2), (1,2), wx.ALL|wx.EXPAND, 2)
+		sizer.Add(text3, (5, 1), (1,1), wx.ALIGN_RIGHT, 2)
+		sizer.Add(self.form3, (5, 2), (1,2), wx.ALL|wx.EXPAND, 2)
+		sizer.Add(text4, (6, 1), (1,1), wx.ALIGN_RIGHT, 2)
+		sizer.Add(self.form4, (6, 2), (1,2), wx.ALL|wx.EXPAND, 2)
+		sizer.Add(text5, (7, 1), (1,1), wx.ALIGN_RIGHT, 2)
+		sizer.Add(self.form5, (7, 2), (1,2), wx.ALL|wx.EXPAND, 2)
+		sizer.Add(botaook, (9,0), (2,7), wx.ALL|wx.ALIGN_CENTER, 10)	
 
 		painel.SetSizerAndFit(sizer)
 		sizer2.Add(painel, (0,0), (1,1), wx.ALL|wx.EXPAND|wx.ALIGN_CENTER)
@@ -416,7 +445,12 @@ class painel_configuracao (wx.Frame):
 	def Pega_pasta_jogo (self, event):
 		dlg = wx.DirDialog(self, Tradutor(u"Selecionando pasta de jogos...", dicionario), corrente, style=wx.OPEN)
 		if dlg.ShowModal() == wx.ID_OK:
-			self.form0.SetValue(dlg.GetPath())
+			valor_dialog = dlg.GetPath()
+			self.form0.SetValue(valor_dialog)
+			self.form2.SetValue(os.path.join(valor_dialog, 'DVD'))
+			self.form3.SetValue(os.path.join(valor_dialog, 'CD'))
+			self.form4.SetValue(os.path.join(valor_dialog, 'ART'))
+			self.form5.SetValue(os.path.join(valor_dialog, 'CFG'))
 			dlg.Destroy()
 
 
