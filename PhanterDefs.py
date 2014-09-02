@@ -1,8 +1,12 @@
 # -*- coding: utf-8 -*- 
+import logging
 import os
 import re
 from contrib import iso9660
 from contrib import pycrc32
+
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 corrente = os.getcwd()
 
@@ -17,7 +21,7 @@ class configuracoes():
 		self.configuracoes = ''
 		self.config = {}
 		try:
-			with open(corrente+'\phanterps2.cfg', 'r') as arquivo_cfg:
+			with open(os.path.join(corrente,'phanterps2.cfg'), 'r') as arquivo_cfg:
 				self.configuracoes = arquivo_cfg.readlines()
 				
 				for x in self.configuracoes:
@@ -28,7 +32,7 @@ class configuracoes():
 						self.config[y[0]] = y[1]
 			
 		except IOError :
-			with open(corrente+'\phanterps2.cfg', 'w') as arquivo_cfg:
+			with open(os.path.join(corrente,'phanterps2.cfg'), 'w') as arquivo_cfg:
 				padrao = """pasta_destino_jogos = \npasta_cover_art = \ndicionario = \n"""
 				arquivo_cfg.write(padrao)
 				arquivo_cfg.close()
@@ -42,7 +46,7 @@ class configuracoes():
 			try:
 				dado = self.config[chave][:-1]
 			except KeyError:
-				print "configuração não encontrada"
+				logger.info("configuração não encontrada")
 				dado = ''
 			return dado
 
@@ -53,16 +57,13 @@ class configuracoes():
 			
 			self.config[chave] = nova_configuracao+'\n'
 			
-			with open(corrente+'\phanterps2.cfg', 'w') as arquivo_cfg:
+			with open(os.path.join(corrente,'phanterps2.cfg'), 'w') as arquivo_cfg:
 				new_config=''
 				for x in self.config:
 					new_config += "%s = %s" %(x, self.config[x])
 				
 				arquivo_cfg.write(new_config)
 				arquivo_cfg.close()
-
-x = configuracoes()
-
 
 def Tradutor (palavra, dicionario = '', isunicode=True):
 	"""
@@ -82,7 +83,6 @@ def Tradutor (palavra, dicionario = '', isunicode=True):
 		for f in caracteres_para_escape:
 			if g == f:
 				achei=1
-				
 			else:
 				pass
 		if achei:
@@ -94,7 +94,7 @@ def Tradutor (palavra, dicionario = '', isunicode=True):
 		traducao = palavra
 		texto_lido=''
 		try:
-			with open(corrente +'\language\sample.lng', 'r') as palavraprocurada:
+			with open(os.path.join(corrente, 'language', 'sample.lng'), 'r') as palavraprocurada:
 				texto = palavraprocurada.read()
 
 				patern = '(%s =.*)' %(palavra_em_escape)
@@ -106,12 +106,12 @@ def Tradutor (palavra, dicionario = '', isunicode=True):
 					texto_lido = texto
 					palavraprocurada.close()
 
-					with open(corrente +'\language\sample.lng', 'w') as palavraprocurada:
+					with open(os.path.join(corrente, 'language', 'sample.lng'), 'w') as palavraprocurada:
 						escrever = texto_lido+'%s = %s\n' %(palavra,palavra)
 						palavraprocurada.write(escrever)
 		except IOError:
 
-			with open(corrente +'\language\sample.lng', 'w') as palavraprocurada:
+			with open(os.path.join(corrente, 'language', 'sample.lng'), 'w') as palavraprocurada:
 				palavraprocurada.write('%s = %s\n' %(palavra,palavra))
 	else:
 		with open(dicionario, 'r') as palavraprocurada:
@@ -130,181 +130,205 @@ def Tradutor (palavra, dicionario = '', isunicode=True):
 		traducao = traducao.decode('utf-8')
 	return traducao 
 
-def procura_cod_in_iso(endereco):
-	x = iso9660.ISO9660(endereco)
-	for y in x.tree():
+class verifica_jogo():
+	def __init__ (self, arquivoiso):
+		"""verifica se o arquivo existe. 
+		Verifica se o jogo já se encontra com a nomeclatura do OPL (XXX_999.99.NOME_DO_JOGO.iso)
+		Abre o arquivo iso para verificar a existência do arquivo launch do jogo (XXX_999.99)
+		Se os 3 testes passarem será criado uma lista com tuplas com endereço, código e nome do jogo seguido dos respectivos estados.
+		Ex.: [('C:\XXX_999.99.NOME_DO_JOGO.iso', True), ('XXX_999.99',True), ('NOME_DO_JOGO', True)]
+		Se não passar a lista será como o exemplo seguinte.
+		Ex.: [('C:\COD_INVALIDO.NOME_QUALQUER_DE_JOGO.iso', True), ('', False), ('NOME_DO_JOGO', False)]
+		"""
+		self.resultado_final = False
+		nome_do_arquivo=''
+		logger.info("Iniciando classe Varifica_jogo(): %s" %(os.path.exists(endereco_do_jogo)))
+		logger.info("Verificando se %s existe" %(os.path.exists(endereco_do_jogo)))
+		if os.path.exists(endereco_do_jogo):
+			nome_do_arquivo=[]
+			nome_do_arquivo = procura_cod_e_nome.findall(endereco_do_jogo)
+			self.end_jogo = endereco_do_jogo, True
+			self.codigo_do_jogo2 = []
+			self.codigo_do_jogo1=''
+			self.nome_do_jogo1=''
 
-		if procura_apenas_cod.match(y):
+			if nome_do_arquivo:
+				self.codigo_do_jogo1 = nome_do_arquivo[0][:11]
+				self.nome_do_jogo1 = nome_do_arquivo[0][12:-4]
 
-			p = procura_apenas_cod.findall(y)
-			return p[0]
+			x = self.procura_cod_in_iso(endereco_do_jogo)
+			self.codigo_do_jogo2 = x.condigo_encontrado
+
+			self.nome_do_jogo2 = "NOME_DO_JOGO"
+
+			if self.codigo_do_jogo2 == False and nome_do_arquivo == []:
+				self.codigo_do_jogo = '', False
+				self.nome_do_jogo = '', False
+			elif self.codigo_do_jogo2 == False and not nome_do_arquivo ==[]:
+				self.codigo_do_jogo = self.codigo_do_jogo1, False
+				self.nome_do_jogo = self.nome_do_jogo1, True
+			else:
+				self.self.codigo_do_jogo = codigo_do_jogo2 or self.codigo_do_jogo1, True
+				self.nome_do_jogo = nome_do_jogo1 or nome_do_jogo2, True
+
+			self.resultado_final = [self.end_jogo, self.codigo_do_jogo, self.nome_do_jogo]
 		else:
-			pass
-	return False
+			logger.info("O iso do jogo %s não existe em %s" %(self.nome_do_jogo ,endereco_do_jogo))
 
-def verifica_jogo(endereco_do_jogo):
-	"""verifica se o arquivo existe. 
-	Verifica se o jogo já se encontra com a nomeclatura do OPL (XXX_999.99.NOME_DO_JOGO.iso)
-	Abre o arquivo iso para verificar a existência do arquivo launch do jogo (XXX_999.99)
-	Se os 3 testes passarem será criado uma lista com tuplas com endereço, código e nome do jogo seguido dos respectivos estados.
-	Ex.: [('C:\XXX_999.99.NOME_DO_JOGO.iso', True), ('XXX_999.99',True), ('NOME_DO_JOGO', True)]
-	Se não passar a lista será como o exemplo seguinte.
-	Ex.: [('C:\COD_INVALIDO.NOME_QUALQUER_DE_JOGO.iso', True), ('', False), ('NOME_DO_JOGO', False)]
-	"""
-	resultado_final = False
-	nome_do_arquivo=''
-	#print "Existe? %s" %(os.path.exists(endereco_do_jogo))
-	if os.path.exists(endereco_do_jogo):
-		nome_do_arquivo=[]
-		nome_do_arquivo = procura_cod_e_nome.findall(endereco_do_jogo)
-		end_jogo = endereco_do_jogo, True
-		codigo_do_jogo2 = []
-		codigo_do_jogo1=''
-		nome_do_jogo1=''
+	def procura_cod_in_iso(self, endereco):
+		x = iso9660.ISO9660(endereco)
+		for y in x.tree():
+			if procura_apenas_cod.match(y):
+				p = procura_apenas_cod.findall(y)
+				self.codigo_encontrado = p[0]
+			else:
+				self.condigo_encontrado=False
 
+class imagens_jogos():
+	def __init__ (self, pasta_das_imagens):
+		logger.info('Iniciando a Classe localiza_imagem_jogo')
 
-		if nome_do_arquivo:
-			codigo_do_jogo1 = nome_do_arquivo[0][:11]
-			nome_do_jogo1 = nome_do_arquivo[0][12:-4]
+		self.pasta_das_imagens=pasta_das_imagens
+		self.cove = [corrente,'sample.jpg']
+		self.cover_encontrados = {}
+		logger.info('Verificando se "%s" existe' %self.pasta_das_imagens)
+		if os.path.exists(self.pasta_das_imagens):
+			self.lista = os.listdir(self.pasta_das_imagens)
+			logger.debug('lista de arquivos encontrados:%s'%self.lista)
+			logger.debug('Criando dicionário com códigos relacionados aos nomes das imagens')
+			for x in self.lista:
+				if procura_coverart.match(x):
+					self.cover_encontrados[x] = x
+			logger.debug('dicionario construido: %s' %self.cover_encontrados)			
 
-		codigo_do_jogo2 = procura_cod_in_iso(endereco_do_jogo)
+	def localiza_cover_art (self, codigo_do_jogo=''):
+		logger.info('Função localiza_cover_art(): Localizando imagem com o nome "%s_COV"' %(codigo_do_jogo))
+		self.cove=[]
+		logger.info('Examinando a pasta %s' %(self.pasta_das_imagens))
 
-		nome_do_jogo2 = "NOME_DO_JOGO"
-
-		if codigo_do_jogo2 == False and nome_do_arquivo == []:
-			codigo_do_jogo = '', False
-			nome_do_jogo = '', False
-		elif codigo_do_jogo2 == False and not nome_do_arquivo ==[]:
-			codigo_do_jogo = codigo_do_jogo1, False
-			nome_do_jogo = nome_do_jogo1, True
-		else:
-			codigo_do_jogo = codigo_do_jogo2 or codigo_do_jogo1, True
-			nome_do_jogo = nome_do_jogo1 or nome_do_jogo2, True
-
-		resultado_final = [end_jogo, codigo_do_jogo, nome_do_jogo]
-	else:
-		pass
-
-	return resultado_final
-
-def localiza_cover_art (pasta_de_jogos, codigo_do_jogo=''):
-	pasta_do_jogo=pasta_de_jogos+'\ART'
-	if os.path.exists(pasta_de_jogos+'\ART'):
-		lista = os.listdir(pasta_de_jogos+'\ART')
-		cover_encontrados = {}
-		for x in lista:
-			if procura_coverart.match(x):
-				cover_encontrados[x] = x
-		if codigo_do_jogo=='':
-			cove = []
-			for x in cover_encontrados:
-				cove.append(cover_encontrados[x])
-		else:
-			try:
-				covex = cover_encontrados[codigo_do_jogo+'_COV.png']
-				
+		try:
+			covex = self.cover_encontrados[codigo_do_jogo+'_COV.png']
+			self.cove = [self.pasta_das_imagens, covex]
+			logger.info(self.cove)
+			
+		except KeyError:
+			try: 
+				covex = self.cover_encontrados[codigo_do_jogo+'_COV.jpg']
+				self.cove = [self.pasta_das_imagens, covex]
+				logger.info(self.cove)
 			except KeyError:
-				try: 
-					covex = cover_encontrados[codigo_do_jogo+'_COV.jpg']
-				except KeyError:
-					covex = 'sample.jpg'
-			if covex == 'sample.jpg':
-				pasta_do_jogo=corrente
-			else:
-				pasta_do_jogo=pasta_de_jogos+'\ART'
-			cove = [pasta_do_jogo, covex]
-			print cove
+				covex = 'sample.jpg'
+				self.cove = [corrente, covex]
+				logger.info(self.cove)
 
 
-	return cove
+		logger.info('localizado %s em %s' %(self.cove[1],self.cove[0]))
+		return self.cove
 
-def extrai_ul(endereco_do_arquivo):
-	jogos_encontrados = []
-	total=0
-	try:
-		with open(endereco_do_arquivo, 'r') as dados:
-			dados = dados.read()
-			if dados =='':
-				pass
-			else:
-				dados = dados.encode('hex')
-				LUL = os.listdir(endereco_do_arquivo[0:-7])
+class lista_de_jogos ():
+	def __init__ (self, pasta_de_jogos):
+		logger.info('Função lista_de_jogos(): Examinando pasta %s'%pasta_de_jogos)
+		self.lista_ul=[]
+		self.lista_DVD=[]
+		self.lista_CD=[]
+		self.tamanho_total = 0
+		self.quant_de_jogos = 0
 
-				conter=0
-				for x in range(len(dados)/128):
-					y = dados[0+conter:conter+128]
-					conter += 128
-					cod, nom = y[70:92], y[0:64]
-					p = nom.find('00')
-					nom = nom[:p]
-					cod1=cod.decode('hex')
-					nom1=nom.decode('hex')
-					crc = pycrc32.crc32(nom1)
+		logger.info('verificando se %s existe' %(os.path.join(pasta_de_jogos, 'ul.cfg')))
+		if os.path.exists(os.path.join(pasta_de_jogos, 'ul.cfg')):
+			lista_parcial = self.extrai_ul(os.path.join(pasta_de_jogos, 'ul.cfg'))
+			self.lista_ul = lista_parcial[0]
+			self.tamanho_total = lista_parcial[1]
+			self.quant_de_jogos=len(self.lista_ul)
+			logger.info('Adicionando jogos do ul, encontrado(s) %s jogos' %(self.quant_de_jogos))
+		else:
+			logger.info('Arquivo "%s" não existe' %os.path.join(pasta_de_jogos, 'ul.cfg'))
 
-					partes = []
-					for j in LUL:
-						patern = 'ul.%X.*' %(crc)
-						if re.match(patern, j):
+		logger.info('verificando se "%s" existe' %(os.path.join(pasta_de_jogos, 'DVD')))
 
-							partes.append(j)
-					tamtot = 0
-					for tt in partes:
-						pp=os.stat(endereco_do_arquivo[0:-7]+'\\'+tt)
-						tama = pp.st_size
-						tamtot += tama
-					total += tamtot
+		if os.path.exists(os.path.join(pasta_de_jogos, 'DVD')):
+	 		lDVD = os.listdir(os.path.join(pasta_de_jogos, 'DVD'))
+			for x in lDVD:
+				if procura_cod_e_nome.match(x):
+					self.quant_de_jogos+=1
+					s = os.stat(os.path.join(pasta_de_jogos, 'DVD', '%s.%s.iso' %(x[:11], x[12:-4])))
+					tamanho = s.st_size
+					self.lista_DVD.append([os.path.join(pasta_de_jogos, 'DVD', '%s.%s.iso' %(x[:11], x[12:-4])), x[:11], x[12:-4], tamanho])
+					self.tamanho_total+=tamanho
+			logger.info('Adicionando jogos da pasta DVD, encontrado(s) %s jogos' %(len(self.lista_DVD)))
+		else:
+			logger.info('A pasta "%s" não existe' %os.path.join(pasta_de_jogos, 'DVD'))
 
-					jogos_encontrados.append([endereco_do_arquivo, cod1, nom1, tamtot])
-	except IOError:
-		print 'Arquivo cfg.ul não encontrado em %s' %(endereco_do_arquivo)
-		pass
-	ct = 0
-	return [jogos_encontrados, total]
+		logger.info('verificando se "%s" existe' %(os.path.join(pasta_de_jogos, 'CD')))
+		if os.path.exists(os.path.join(pasta_de_jogos, 'CD')):
+			lCD = os.listdir(os.path.join(pasta_de_jogos, 'CD'))
+			for x in lCD:
+				if procura_cod_e_nome.match(x):
+					self.quant_de_jogos+=1
+					t = os.stat(os.path.join(pasta_de_jogos, 'CD', '%s.%s.iso' %(x[:11], x[12:-4])))
+					tamanho = t.st_size
+					self.lista_CD.append([os.path.join(pasta_de_jogos, 'CD', '%s.%s.iso' %(x[:11], x[12:-4])), x[:11], x[12:-4], tamanho])
+					self.tamanho_total+=tamanho
+			logger.info('Adicionando jogos da pasta CD, encontrado(s) %s jogos' %(len(self.lista_CD)))
+		else:
+			logger.info('A pasta "%s" não existe' %os.path.join(pasta_de_jogos, 'CD'))
 
-extrai_ul('D:\PS2\ul.cfg')
+		c = self.lista_ul+self.lista_DVD+self.lista_CD
+		self.jogos_e_info = [c, self.quant_de_jogos, self.tamanho_total]
 
-def lista_de_jogos (pasta_de_jogos):
-	lista_ul=[]
-	lista_DVD=[]
-	lista_CD=[]
-	tamanho_total = 0
-	quant_de_jogos = 0
+	def extrai_ul(self, endereco_do_arquivo):
+		logger.info('função extrair_ul:Examinando %s'%endereco_do_arquivo)
+		self.jogos_ul_encontrados = []
+		self.tamanho_total_ul=0
+		try:
+			logger.debug('Tentando abrir %s' %endereco_do_arquivo)
+			with open(endereco_do_arquivo, 'r') as dados:
+				dados = dados.read()
+				if dados =='':
+					pass
+				else:
+					dados = dados.encode('hex')
+					LUL = os.listdir(endereco_do_arquivo[0:-7])
 
-	if os.path.exists(pasta_de_jogos+'\ul.cfg'):
-		lista_parcial = extrai_ul(pasta_de_jogos+'\ul.cfg')
-		lista_ul = lista_parcial[0]
-		tamanho_total = lista_parcial[1]
-		quant_de_jogos=len(lista_ul)
+					conter=0
+					for x in range(len(dados)/128):
+						y = dados[0+conter:conter+128]
+						conter += 128
+						cod, nom = y[70:92], y[0:64]
+						p = nom.find('00')
+						nom = nom[:p]
+						cod1=cod.decode('hex')
+						nom1=nom.decode('hex')
+						crc = pycrc32.crc32(nom1)
 
-	if os.path.exists(pasta_de_jogos+'\DVD'):
- 
-		lDVD = os.listdir(pasta_de_jogos+'\DVD')
-		for x in lDVD:
-			if procura_cod_e_nome.match(x):
-				quant_de_jogos+=1
-				s = os.stat(pasta_de_jogos+'\DVD\%s.%s.iso' %(x[:11], x[12:-4]))
-				tamanho = s.st_size
-				lista_DVD.append([pasta_de_jogos+'\DVD\%s.%s.iso' %(x[:11], x[12:-4]), x[:11], x[12:-4], tamanho])
-				tamanho_total+=tamanho
+						partes = []
+						for j in LUL:
+							patern = 'ul.%X.*' %(crc)
+							if re.match(patern, j):
 
-	if os.path.exists(pasta_de_jogos+'\CD'):
+								partes.append(j)
+						tamtot = 0
+						for tt in partes:
+							pp=os.stat(os.path.join(endereco_do_arquivo[0:-7], tt))
+							tama = pp.st_size
+							tamtot += tama
+						self.tamanho_total_ul += tamtot
+						self.jogos_ul_encontrados.append([endereco_do_arquivo, cod1, nom1, tamtot])
+					logger.info('Encontrado no %s jogos no ul.cfg' %(len(self.jogos_ul_encontrados)))
+		except IOError:
+			logger.info('Arquivo cfg.ul não encontrado em %s' %(endereco_do_arquivo))
+			pass
+		ct = 0
+		self.jogos_e_info_ul = [self.jogos_ul_encontrados, self.tamanho_total_ul]
+		return self.jogos_e_info_ul
 
-		lCD = os.listdir(pasta_de_jogos+'\CD')
-		for x in lCD:
-			if procura_cod_e_nome.match(x):
-				quant_de_jogos+=1
-				t = os.stat(pasta_de_jogos+'\CD\%s.%s.iso' %(x[:11], x[12:-4]))
-				tamanho = t.st_size
-				lista_CD.append([pasta_de_jogos+'\CD\%s.%s.iso' %(x[:11], x[12:-4]), x[:11], x[12:-4], tamanho])
-				tamanho_total+=tamanho
-
-	c = lista_ul+lista_DVD+lista_CD
-	return [c, quant_de_jogos, tamanho_total]
 
 def convert_tamanho(valor=''):
+	logger.info('Função convert_tamanho: Convertendo %s' %(valor))
 	if valor =='':
 		tamanho = "Problema ao calcular"
 	else:
+		valor= long(valor)
 		KB = 1024
 		MB = 1024*1024
 		GB = 1024*1024*1024

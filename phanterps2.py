@@ -3,8 +3,11 @@
 import wx
 import wx.html
 import os
+import logging
+from PhanterDefs import Tradutor, configuracoes, imagens_jogos, lista_de_jogos, convert_tamanho, verifica_jogo
 
-from PhanterDefs import Tradutor, configuracoes, localiza_cover_art, lista_de_jogos, convert_tamanho, verifica_jogo
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 corrente = os.getcwd()
 conf_prog = configuracoes()
@@ -14,7 +17,7 @@ dicionario = conf_prog.leitor_configuracao('dicionario')
 class meu_splash(wx.App): 
 	def OnInit(self):
 		
-		bmp = wx.Image ( corrente +'\imagens\conexao.png', wx.BITMAP_TYPE_ANY).ConvertToBitmap()
+		bmp = wx.Image (os.path.join(corrente,'imagens','conexao.png'), wx.BITMAP_TYPE_ANY).ConvertToBitmap()
 		
 		wx.SplashScreen ( bmp, wx.CENTER_ON_SCREEN | wx.SPLASH_TIMEOUT, 1200, None, style = wx.NO_BORDER | wx.SIMPLE_BORDER | wx.STAY_ON_TOP ) 
 		wx.Yield() 
@@ -24,7 +27,7 @@ class meu_splash(wx.App):
 class meu_programa(wx.App):
 	def OnInit(self):
 
-		favicon = wx.Icon(corrente +'\imagens\\favicon.png', wx.BITMAP_TYPE_ANY)
+		favicon = wx.Icon(os.path.join(corrente,'imagens','favicon.png'), wx.BITMAP_TYPE_ANY)
 		self.title = "PhanterPS2"
 		self.frame = meu_frame(self.title, (-1,-1), (800,600))
 		self.frame.SetIcon(favicon) 
@@ -37,13 +40,14 @@ class meu_frame(wx.Frame):
 		wx.Frame.__init__(self, None, wx.ID_ANY, title, pos, size)
 		self.pastadefault = conf_prog.pasta_padrao_jogos
 
-		self.jogos_e_info = lista_de_jogos(self.pastadefault)
+		x = lista_de_jogos(self.pastadefault)
+		self.jogos_e_info = x.jogos_e_info
 		self.listjogos = self.jogos_e_info[0]
 
-		imagem1 = wx.Image(corrente+'\imagens\isops2.png', wx.BITMAP_TYPE_PNG).ConvertToBitmap()
-		imagem2 = wx.Image(corrente+'\imagens\salvar.png', wx.BITMAP_TYPE_ANY).ConvertToBitmap()
-		imagem3 = wx.Image(corrente+'\imagens\config.png', wx.BITMAP_TYPE_ANY).ConvertToBitmap()
-		imagem4 = wx.Image(corrente+'\imagens\sobre.png', wx.BITMAP_TYPE_ANY).ConvertToBitmap()
+		imagem1 = wx.Image(os.path.join(corrente,'imagens','isops2.png'), wx.BITMAP_TYPE_PNG).ConvertToBitmap()
+		imagem2 = wx.Image(os.path.join(corrente,'imagens','salvar.png'), wx.BITMAP_TYPE_ANY).ConvertToBitmap()
+		imagem3 = wx.Image(os.path.join(corrente,'imagens','config.png'), wx.BITMAP_TYPE_ANY).ConvertToBitmap()
+		imagem4 = wx.Image(os.path.join(corrente,'imagens','sobre.png'), wx.BITMAP_TYPE_ANY).ConvertToBitmap()
 
 		new_imagem1 = wx.ImageFromBitmap(imagem1).Scale(16, 16, wx.IMAGE_QUALITY_HIGH).ConvertToBitmap() #diminui a imagem para 16x16#
 		new_imagem2 = wx.ImageFromBitmap(imagem2).Scale(16, 16, wx.IMAGE_QUALITY_HIGH).ConvertToBitmap() #diminui a imagem para 16x16#
@@ -107,9 +111,12 @@ class meu_frame(wx.Frame):
 
 		self.painel_scroll = wx.ScrolledWindow(self.painel_principal, wx.ID_ANY, (0,0),(-1,525), style = wx.ALIGN_CENTER|wx.ALL|wx.EXPAND|wx.BORDER_DOUBLE)		
 		sizer_jogos = wx.GridSizer(cols=2, hgap=0, vgap=0)
+		self.imagens_jogos = imagens_jogos(os.path.join(self.pastadefault,'ART'))
+		logger.debug(self.imagens_jogos)
 		for x in self.listjogos:
-			sizer_jogos.Add(painel_de_jogos(self.painel_scroll, wx.ID_ANY, (0,0),(-1,110),
-				arquivo_do_jogo = x[0], codigo_do_jogo = x[1], nome_do_jogo = x[2], tamanho_do_jogo = x[3]), 0, wx.ALIGN_CENTER|wx.ALL|wx.EXPAND,5)
+			logger.debug('Construindo lista de jogos: retorno da função lista de jogos %s' %x)
+			sizer_jogos.Add(painel_de_jogos(self.painel_scroll, wx.ID_NEW, (0,0),(-1,110),
+				arquivo_do_jogo = x[0], codigo_do_jogo = x[1], nome_do_jogo = x[2], tamanho_do_jogo = x[3], lista_cover_art = self.imagens_jogos), 0, wx.ALIGN_CENTER|wx.ALL|wx.EXPAND,5)
 			#self.SendSizeEvent()
 		self.painel_scroll.SetSizer(sizer_jogos)
 		self.painel_scroll.SetScrollbars(1, 1, -1, -1)
@@ -143,6 +150,7 @@ class meu_frame(wx.Frame):
 		self.SendSizeEvent()
 
 	def atualizar(self):
+		logger.debug('Executando função atualizar()')
 
 		self.painel_principal.Destroy()
 		self.painel_principal = wx.Panel(self, wx.ID_NEW) #Painel Pinricpal
@@ -164,19 +172,21 @@ class meu_frame(wx.Frame):
 
 		self.painel_scroll = wx.ScrolledWindow(self.painel_principal, wx.ID_NEW, (0,0),(-1,525), style = wx.ALIGN_CENTER|wx.ALL|wx.EXPAND|wx.BORDER_DOUBLE)		
 		sizer_jogos = wx.GridSizer(cols=2, hgap=0, vgap=0)
+		self.imagens_jogos = imagens_jogos(os.path.join(self.pastadefault, 'ART'))
+		logger.debug(self.imagens_jogos)
 		for x in self.listjogos:
 			sizer_jogos.Add(painel_de_jogos(self.painel_scroll, wx.ID_NEW, (0,0),(-1,110),
-				arquivo_do_jogo = x[0], codigo_do_jogo = x[1], nome_do_jogo = x[2], tamanho_do_jogo = x[3]), 0, wx.ALIGN_CENTER|wx.ALL|wx.EXPAND,5)
+				arquivo_do_jogo = x[0], codigo_do_jogo = x[1], nome_do_jogo = x[2], tamanho_do_jogo = x[3], lista_cover_art = self.imagens_jogos), 0, wx.ALIGN_CENTER|wx.ALL|wx.EXPAND,5)
 			self.SendSizeEvent()
 		self.painel_scroll.SetSizer(sizer_jogos)
 		self.painel_scroll.SetScrollbars(1, 1, -1, -1)
 
 		self.painel_info_e_acao = wx.Panel(self.painel_principal, wx.ID_NEW, (0,0),(-1,50), style = wx.ALIGN_CENTER|wx.ALL|wx.EXPAND)
-		text1 = wx.StaticText(self.painel_info_e_acao, wx.ID_ANY, Tradutor(u"Total de jogos", dicionario), (0,0), style = wx.TE_RICH)
-		form1 = wx.TextCtrl(self.painel_info_e_acao, wx.ID_ANY, str(self.jogos_e_info[1]), (0,0), style = wx.TE_RICH)
+		text1 = wx.StaticText(self.painel_info_e_acao, wx.ID_NEW, Tradutor(u"Total de jogos", dicionario), (0,0), style = wx.TE_RICH)
+		form1 = wx.TextCtrl(self.painel_info_e_acao, wx.ID_NEW, str(self.jogos_e_info[1]), (0,0), style = wx.TE_RICH)
 		form1.Enabled = False
-		text2 = wx.StaticText(self.painel_info_e_acao, wx.ID_ANY, Tradutor(u"Tamanho total", dicionario), (0,0), style = wx.TE_RICH)
-		form2 = wx.TextCtrl(self.painel_info_e_acao, wx.ID_ANY, convert_tamanho(self.jogos_e_info[2]), (0,0), style = wx.TE_RICH)
+		text2 = wx.StaticText(self.painel_info_e_acao, wx.ID_NEW, Tradutor(u"Tamanho total", dicionario), (0,0), style = wx.TE_RICH)
+		form2 = wx.TextCtrl(self.painel_info_e_acao, wx.ID_NEW, convert_tamanho(self.jogos_e_info[2]), (0,0), style = wx.TE_RICH)
 		form2.Enabled = False
 		sizer_panel_rodape.Add(text1, (0,0), (1,1), wx.ALL | wx.EXPAND, 5)
 		sizer_panel_rodape.Add(form1, (0,1), (1,3), wx.ALL | wx.EXPAND, 5)
@@ -195,7 +205,7 @@ class meu_frame(wx.Frame):
 
 
 		#self.Bind(wx.EVT_BUTTON, self.dofilho) #No atualizer deve ser comentado
-
+		self.Layout()
 		self.CenterOnScreen()
 		self.SendSizeEvent()
 
@@ -241,23 +251,27 @@ class meu_frame(wx.Frame):
 
 
 	def dofilho(self, event):
+		logger.debug('Capturando evento filho')
 
 		conf_prog = configuracoes()
 		self.pastadefault = conf_prog.pasta_padrao_jogos
+		logger.debug('Pasta default mudada para %s' %self.pastadefault)
 
-		self.listjogos = lista_de_jogos(self.pastadefault)
-		self.listjogos=self.listjogos[0]
+		x = lista_de_jogos(self.pastadefault)
+		self.jogos_e_info = x.jogos_e_info
+		self.listjogos = self.jogos_e_info[0]
 		self.atualizar()
 
 
 
 class painel_de_jogos(wx.Panel):
-	def __init__ (self, parent, ID, pos, size, arquivo_do_jogo, codigo_do_jogo, nome_do_jogo, tamanho_do_jogo='4 GB'):
+	def __init__ (self, parent, ID, pos, size, arquivo_do_jogo, codigo_do_jogo, nome_do_jogo, tamanho_do_jogo, lista_cover_art):
 		wx.Panel.__init__(self, parent, wx.ID_ANY, pos, size, wx.EXPAND)
 		pastadefault = conf_prog.pasta_padrao_jogos
 
-		self.cover_art = localiza_cover_art(pastadefault, codigo_do_jogo)
-		imagem5 = wx.Image(self.cover_art[0]+'\\'+self.cover_art[1], wx.BITMAP_TYPE_ANY).ConvertToBitmap()
+		self.cover_art=lista_cover_art.localiza_cover_art(codigo_do_jogo)
+		logger.debug('convertando imagem: %s' %(os.path.join(self.cover_art[0], self.cover_art[1])))
+		imagem5 = wx.Image(os.path.join(self.cover_art[0], self.cover_art[1]), wx.BITMAP_TYPE_ANY).ConvertToBitmap()
 		new_imagem5 = wx.ImageFromBitmap(imagem5).Scale(70, 100, wx.IMAGE_QUALITY_NORMAL).ConvertToBitmap()
 		botao_imagem = wx.BitmapButton(self, wx.ID_ANY, new_imagem5, (0, 0),(80, 110))
 		botao_imagem.SetToolTipString(Tradutor(u"Clique na imagem para mudá-la", dicionario))
