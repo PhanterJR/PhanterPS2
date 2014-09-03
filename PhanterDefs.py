@@ -12,7 +12,6 @@ logger = logging.getLogger(__name__)
 
 corrente = os.getcwd()
 
-
 procura_cod_e_nome = re.compile(r'([a-zA-Z]{4}_[0-9]{3}\.[0-9]{2}\..*\.[iI][sS][oO])')
 procura_nome_e_cod_no_ul = re.compile(r'([ a-zA-Z0-9]*.*ul\.[ a-zA-Z0-9]{4}_[0-9]{3}\.[0-9]{2})')
 procura_apenas_cod = re.compile(r'^/([a-zA-Z]{4}_[0-9]{3}\.[0-9]{2})')
@@ -67,71 +66,6 @@ class configuracoes():
 				arquivo_cfg.write(new_config)
 				arquivo_cfg.close()
 
-def Tradutor (palavra, dicionario = '', isunicode=True):
-	"""
-
-	"""
-	if isunicode==False:
-		pass
-	else:
-		palavra = palavra.encode('utf-8')
-	palavra2 = palavra
-
-	caracteres_para_escape = ['/', '.', '*', '+', '?', '|','(', ')', '[', ']', '{', '}', '\\']
-
-	palavra_em_escape = ''
-	for g in palavra2:
-		achei = 0
-		for f in caracteres_para_escape:
-			if g == f:
-				achei=1
-			else:
-				pass
-		if achei:
-			palavra_em_escape += "\\"+g
-		else:
-			palavra_em_escape+=g
-
-	if dicionario=='':
-		traducao = palavra
-		texto_lido=''
-		try:
-			with open(os.path.join(corrente, 'language', 'sample.lng'), 'r') as palavraprocurada:
-				texto = palavraprocurada.read()
-
-				patern = '(%s =.*)' %(palavra_em_escape)
-				x = re.findall(patern, texto)
-
-				if not x == []:
-					pass
-				else:
-					texto_lido = texto
-					palavraprocurada.close()
-
-					with open(os.path.join(corrente, 'language', 'sample.lng'), 'w') as palavraprocurada:
-						escrever = texto_lido+'%s = %s\n' %(palavra,palavra)
-						palavraprocurada.write(escrever)
-		except IOError:
-
-			with open(os.path.join(corrente, 'language', 'sample.lng'), 'w') as palavraprocurada:
-				palavraprocurada.write('%s = %s\n' %(palavra,palavra))
-	else:
-		with open(dicionario, 'r') as palavraprocurada:
-			texto = palavraprocurada.read()
-
-			patern = '(%s =.*)' %(palavra_em_escape)
-
-			x = re.findall(patern, texto)
-
-			if x==[]:
-				traducao = palavra
-			else:
-				y = x[0].find(' = ')
-				traducao = x[0][y+3:]
-	if isunicode:
-		traducao = traducao.decode('utf-8')
-	return traducao 
-
 class verifica_jogo():
 	def __init__ (self, arquivoiso):
 		"""verifica se o arquivo existe. 
@@ -144,54 +78,60 @@ class verifica_jogo():
 		"""
 		self.resultado_final = False
 		nome_do_arquivo=''
-		logger.info("Iniciando classe Varifica_jogo(): %s" %(os.path.exists(endereco_do_jogo)))
-		logger.info("Verificando se %s existe" %(os.path.exists(endereco_do_jogo)))
-		if os.path.exists(endereco_do_jogo):
+		logger.info("Iniciando classe Varifica_jogo(): %s" %(arquivoiso))
+		logger.info("Verificando se %s existe" %(arquivoiso))
+		if os.path.exists(arquivoiso):
 			nome_do_arquivo=[]
-			nome_do_arquivo = procura_cod_e_nome.findall(endereco_do_jogo)
-			self.end_jogo = endereco_do_jogo, True
-			self.codigo_do_jogo2 = []
+			nome_do_arquivo = procura_cod_e_nome.findall(arquivoiso)
+			logger.debug('O nome do arquivo é: %s' %(nome_do_arquivo))
+			self.end_jogo = arquivoiso, True
+
 			self.codigo_do_jogo1=''
 			self.nome_do_jogo1=''
 
-			if nome_do_arquivo:
+			if not nome_do_arquivo ==[]:
 				self.codigo_do_jogo1 = nome_do_arquivo[0][:11]
 				self.nome_do_jogo1 = nome_do_arquivo[0][12:-4]
 
-			x = self.procura_cod_in_iso(endereco_do_jogo)
-			self.codigo_do_jogo2 = x.condigo_encontrado
+			self.procura_cod_in_iso(arquivoiso)
+
 
 			self.nome_do_jogo2 = "NOME_DO_JOGO"
 
-			if self.codigo_do_jogo2 == False and nome_do_arquivo == []:
-				self.codigo_do_jogo = '', False
-				self.nome_do_jogo = '', False
-			elif self.codigo_do_jogo2 == False and not nome_do_arquivo ==[]:
-				self.codigo_do_jogo = self.codigo_do_jogo1, False
-				self.nome_do_jogo = self.nome_do_jogo1, True
-			else:
-				self.self.codigo_do_jogo = codigo_do_jogo2 or self.codigo_do_jogo1, True
-				self.nome_do_jogo = nome_do_jogo1 or nome_do_jogo2, True
+			# if self.codigo_do_jogo2 == False and nome_do_arquivo == []:
+			# 	self.codigo_do_jogo = '', False
+			# 	self.nome_do_jogo = '', False
+			# elif self.codigo_do_jogo2 == False and not nome_do_arquivo ==[]:
+			# 	self.codigo_do_jogo = self.codigo_do_jogo1, False
+			# 	self.nome_do_jogo = self.nome_do_jogo1, True
+			# else:
+		 	self.codigo_do_jogo = self.codigo_do_jogo1 if self.codigo_encontrado==False else self.codigo_encontrado, True if not self.codigo_encontrado==False else False
+		 	self.nome_do_jogo = self.nome_do_jogo1 or self.nome_do_jogo2, True
 
 			self.resultado_final = [self.end_jogo, self.codigo_do_jogo, self.nome_do_jogo]
+			logger.debug('resultado final da verificação: %s' %self.resultado_final)
 		else:
-			logger.info("O iso do jogo %s não existe em %s" %(self.nome_do_jogo ,endereco_do_jogo))
+			logger.info("O iso do jogo %s não existe em %s" %(self.nome_do_jogo ,arquivoiso))
 
 	def procura_cod_in_iso(self, endereco):
+		logger.debug(u'Iniciando Funcao procura_cod_in_iso: procurando código em %s' %endereco)
 		x = iso9660.ISO9660(endereco)
+		self.codigo_encontrado=False
 		for y in x.tree():
 			if procura_apenas_cod.match(y):
 				p = procura_apenas_cod.findall(y)
 				self.codigo_encontrado = p[0]
+				logger.debug(u'Código encontrado: %s' %self.codigo_encontrado)
 			else:
-				self.condigo_encontrado=False
+				logger.debug('código não encontrado, retornando False')
+		logger.debug(u'resultado da procura do código: %s' %self.codigo_encontrado)
 
 class imagens_jogos():
 	def __init__ (self, pasta_das_imagens):
 		logger.info('Iniciando a Classe localiza_imagem_jogo')
 
 		self.pasta_das_imagens=pasta_das_imagens
-		self.cove = [corrente,'sample.jpg']
+		self.cove = [os.path.join(corrente, 'imagens'),'sample.jpg']
 		self.cover_encontrados = {}
 		logger.info('Verificando se "%s" existe' %self.pasta_das_imagens)
 		if os.path.exists(self.pasta_das_imagens):
@@ -220,7 +160,7 @@ class imagens_jogos():
 				logger.info(self.cove)
 			except KeyError:
 				covex = 'sample.jpg'
-				self.cove = [corrente, covex]
+				self.cove = [os.path.join(corrente,'imagens'), covex]
 				logger.info(self.cove)
 
 
@@ -324,7 +264,6 @@ class lista_de_jogos ():
 		self.jogos_e_info_ul = [self.jogos_ul_encontrados, self.tamanho_total_ul]
 		return self.jogos_e_info_ul
 
-
 def convert_tamanho(valor=''):
 	logger.info('Função convert_tamanho: Convertendo %s' %(valor))
 	if valor =='':
@@ -359,4 +298,68 @@ def drivers_do_windows():
 
     return drives
 
+def Tradutor (palavra, dicionario = '', isunicode=True):
+	"""
+
+	"""
+	if isunicode==False:
+		pass
+	else:
+		palavra = palavra.encode('utf-8')
+	palavra2 = palavra
+
+	caracteres_para_escape = ['/', '.', '*', '+', '?', '|','(', ')', '[', ']', '{', '}', '\\']
+
+	palavra_em_escape = ''
+	for g in palavra2:
+		achei = 0
+		for f in caracteres_para_escape:
+			if g == f:
+				achei=1
+			else:
+				pass
+		if achei:
+			palavra_em_escape += "\\"+g
+		else:
+			palavra_em_escape+=g
+
+	if dicionario=='':
+		traducao = palavra
+		texto_lido=''
+		try:
+			with open(os.path.join(corrente, 'language', 'sample.lng'), 'r') as palavraprocurada:
+				texto = palavraprocurada.read()
+
+				patern = '(%s =.*)' %(palavra_em_escape)
+				x = re.findall(patern, texto)
+
+				if not x == []:
+					pass
+				else:
+					texto_lido = texto
+					palavraprocurada.close()
+
+					with open(os.path.join(corrente, 'language', 'sample.lng'), 'w') as palavraprocurada:
+						escrever = texto_lido+'%s = %s\n' %(palavra,palavra)
+						palavraprocurada.write(escrever)
+		except IOError:
+
+			with open(os.path.join(corrente, 'language', 'sample.lng'), 'w') as palavraprocurada:
+				palavraprocurada.write('%s = %s\n' %(palavra,palavra))
+	else:
+		with open(dicionario, 'r') as palavraprocurada:
+			texto = palavraprocurada.read()
+
+			patern = '(%s =.*)' %(palavra_em_escape)
+
+			x = re.findall(patern, texto)
+
+			if x==[]:
+				traducao = palavra
+			else:
+				y = x[0].find(' = ')
+				traducao = x[0][y+3:]
+	if isunicode:
+		traducao = traducao.decode('utf-8')
+	return traducao 
 
