@@ -36,7 +36,7 @@ class configuracoes():
 						self.config[y[0]] = y[1]
 		except IOError :
 			with open(os.path.join(corrente, nome_do_arquivo), 'w') as arquivo_cfg:
-				padrao = ""
+				padrao = "pasta_DVD = %s\DVD\npasta_CFG = %s\CFG\ndicionario = \npasta_ART = %s\ART\npasta_destino_jogos = %s\npasta_CD = %s\CD" %(corrente, corrente, corrente, corrente, corrente)
 				arquivo_cfg.write(padrao)
 				arquivo_cfg.close()
 
@@ -170,7 +170,7 @@ class imagens_jogos():
 		logger.info('localizado %s em %s' %(self.cove[1],self.cove[0]))
 		return self.cove
 
-class lista_de_jogos ():
+class lista_de_jogos():
 	def __init__ (self, pasta_de_jogos):
 		logger.info('Função lista_de_jogos(): Examinando pasta %s'%pasta_de_jogos)
 		self.lista_ul=[]
@@ -224,6 +224,7 @@ class lista_de_jogos ():
 			logger.info('A pasta "%s" não existe' %os.path.join(pasta_de_jogos, 'CD'))
 
 		self.lista_total_de_jogos = self.lista_ul+self.lista_DVD+self.lista_CD
+		
 		self.jogos_e_info = [self.lista_total_de_jogos, self.quant_de_jogos, self.tamanho_total]
 
 class manipula_ul():
@@ -235,10 +236,14 @@ class manipula_ul():
 		self.extrai_ul(endereco_do_arquivo)
 		return self.jogos_e_info_ul
 				
-	def criar_nome_ul (self, codigo_do_jogo, nome_do_jogo):
+	def criar_nome_ul (self, codigo_do_jogo, nome_do_jogo, tipo = 'DVD', quant_de_partes = 0):
 		cod = 'ul.%s' %(codigo_do_jogo)
+		if tipo == 'CD':
+			tipo_id = 12
+		else:
+			tipo_id = 14
 		codigo_hex = cod.encode('hex')
-		codigo_completo_hex = '%s000014000000000800000000000000000000' %(codigo_hex)
+		codigo_completo_hex = '%s000%s%s000000000800000000000000000000' %(codigo_hex, quant_de_partes, tipo_id)
 		nome_hex = nome_do_jogo.encode('hex')
 		numnome = len(nome_hex)
 		if numnome > 60:
@@ -255,50 +260,41 @@ class manipula_ul():
 		return nomebase
 
 	def extrai_ul(self, endereco_do_arquivo, renomear=False, novo_nome=''):
-		logger.info(u'função extrair_ul:Examinando %s'%endereco_do_arquivo)
-		self.jogos_ul_encontrados = []
-		self.tamanho_total_ul=0
-		try:
-			logger.debug('Tentando abrir %s' %endereco_do_arquivo)
-			with open(endereco_do_arquivo, 'r') as dados:
-				dados = dados.read()
-				if dados =='':
-					pass
-				else:
-					dados = dados.encode('hex')
-					LUL = os.listdir(endereco_do_arquivo[0:-7])
+		with open(endereco_do_arquivo, 'r') as arquivo_lido:
+			conteudo = arquivo_lido.read()
+		endereco_base = os.path.dirname(endereco_do_arquivo)
 
-					conter=0
-					for x in range(len(dados)/128):
-						y = dados[0+conter:conter+128]
-						conter += 128
-						cod, nom = y[70:92], y[0:64]
-						p = nom.find('00')
-						nom = nom[:p]
-						cod1=cod.decode('hex')
-						nom1=nom.decode('hex')
-						crc = pycrc32.crc32(nom1)
+		conteudo_hex = conteudo.encode('hex')
 
-						partes = []
-						for j in LUL:
-							patern = 'ul.%08X.*' %(crc)
-							if re.match(patern, j):
+		quantidade_de_jogos_no_ul = len(conteudo_hex)/128
+		jogos_separados = []
+		inicont = 0
+		tamanho_totaldf = 0
+		for x in range(quantidade_de_jogos_no_ul):
+			pedaco_nome_jogo = conteudo_hex[inicont:inicont+64]
+			pedaco_codigo =  conteudo_hex[inicont+70:inicont+92]
+			pedaco_quant_partes = conteudo_hex[inicont+95:inicont+96]
+			print pedaco_quant_partes
+			pedaco_tipo = conteudo_hex[inicont+96:inicont+98]
+			print pedaco_tipo
+			procs = pedaco_nome_jogo.find('000')
+			pedaco_so_o_nome = conteudo_hex[inicont:inicont+procs]
+			pedaco_codigo_nrm = pedaco_codigo.decode('hex')
+			pedaco_so_o_nome_nrm = pedaco_so_o_nome.decode('hex')
+			inicont +=128
+			nome_base_pedaco = "ul.%08X.%s" %(pycrc32.crc32(pedaco_so_o_nome_nrm), pedaco_codigo_nrm)
+			pedacos_encontrados = glob.glob(os.path.join(endereco_base, "%s.*"%nome_base_pedaco))
+			tamanhossssd = 0
+			for hj in pedacos_encontrados:
+				inforhj = os.stat(hj)
+				tamtam = inforhj.st_size
+				tamanhossssd+=tamtam
+			tamanho_totaldf+=tamanhossssd
+			jogos_separados.append([endereco_do_arquivo, pedaco_codigo_nrm, pedaco_so_o_nome_nrm, tamanhossssd, pedaco_quant_partes, pedaco_tipo])
+		self.jogos_e_info_ul = [jogos_separados, tamanho_totaldf]
 
-								partes.append(j)
-						tamtot = 0
-						for tt in partes:
-							pp=os.stat(os.path.join(endereco_do_arquivo[0:-7], tt))
-							tama = pp.st_size
-							tamtot += tama
-						self.tamanho_total_ul += tamtot
-						self.jogos_ul_encontrados.append([endereco_do_arquivo, cod1, nom1, tamtot])
-					logger.info('Encontrado %s jogos no ul.cfg' %(len(self.jogos_ul_encontrados)))
-		except IOError:
-			logger.info(u'Arquivo cfg.ul não encontrado em %s' %(endereco_do_arquivo))
-			pass
-		ct = 0
-		self.jogos_e_info_ul = [self.jogos_ul_encontrados, self.tamanho_total_ul]
 		return self.jogos_e_info_ul
+
 
 	def juntar_arquivos (self, arquivos, destino='', nome='NOVO_NOME.iso'):
 		if not arquivos == list():
@@ -591,8 +587,7 @@ def muda_nome_jogo(endereco_do_jogo, novo_nome):
 	resultado = [os.path.join(endereco, u"%s.%s.iso" %(codigo_do_jogo, novo_nome)), codigo_do_jogo , novo_nome]
 	return resultado
 
-
 if __name__ == '__main__':
-	x = manipula_ul()
-	y = x.criar_nome_ul('SLPM_234.23', 'Vai_cagar')
-	print y
+	pass
+
+

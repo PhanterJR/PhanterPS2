@@ -1,23 +1,23 @@
 # -*- coding: utf-8 -*- 
 
-import platform # importando platforma para determinar qual sistema está em uso
+import platform 
 import wx
 import wx.html
 import os
-import logging # Alternativa ao print, com a vantagem de redirecionar as saídas para um arquivo de log e com níveis de saída.
-from PhanterDefs import Tradutor, configuracoes, imagens_jogos, lista_de_jogos, convert_tamanho, verifica_jogo, manipula_ul, retirar_exitf_imagem, muda_nome_jogo  #meu módulo
+import logging 
+from phanterdefs import Tradutor, configuracoes, imagens_jogos, lista_de_jogos, convert_tamanho, verifica_jogo, manipula_ul, retirar_exitf_imagem, muda_nome_jogo  #meu módulo
 import glob
 from contrib import pycrc32
 import time
 
 
-logging.basicConfig(level=logging.ERROR) #configurando o logging
-logger = logging.getLogger(__name__) #configurando para mostrar o módulo responsável
+logging.basicConfig(level=logging.ERROR) 
+logger = logging.getLogger(__name__) 
 
-corrente = os.getcwd() #pegando a pasta onde se encontra o phanterps2.py e demais módulos e arquivos
-conf_prog = configuracoes() #instanciando a classe das configurações responsável por ler e escrever no phanterps2.cfg
+corrente = os.getcwd() 
+conf_prog = configuracoes() 
 imagem_check = configuracoes('imagem_check.cfg')
-memoria = {} #dicionário usado para armazenar variáveis globais usadas na comunicação entre os frames e panels
+memoria = {}
 memoria['tamanho_total_dos_jogos'] = 0
 memoria['jogos_selecionados'] = 0
 memoria['progresso'] = 0
@@ -47,14 +47,16 @@ class meu_frame(wx.Frame):
 		self.listjogos = self.jogos_e_info[0]
 
 		imagem1 = wx.Image(os.path.join(corrente,'imagens','isops2.png'), wx.BITMAP_TYPE_PNG).ConvertToBitmap()
-		imagem2 = wx.Image(os.path.join(corrente,'imagens','atualizar.png'), wx.BITMAP_TYPE_ANY).ConvertToBitmap()
-		self.imagem3 = wx.Image(os.path.join(corrente,'imagens','config.png'), wx.BITMAP_TYPE_ANY).ConvertToBitmap()
-		imagem4 = wx.Image(os.path.join(corrente,'imagens','sobre.png'), wx.BITMAP_TYPE_ANY).ConvertToBitmap()
+		imagem2 = wx.Image(os.path.join(corrente,'imagens','multips2.png'), wx.BITMAP_TYPE_PNG).ConvertToBitmap()
+		imagem3 = wx.Image(os.path.join(corrente,'imagens','atualizar.png'), wx.BITMAP_TYPE_ANY).ConvertToBitmap()
+		imagem4 = wx.Image(os.path.join(corrente,'imagens','config.png'), wx.BITMAP_TYPE_ANY).ConvertToBitmap()
+		self.imagem5 = wx.Image(os.path.join(corrente,'imagens','sobre.png'), wx.BITMAP_TYPE_ANY).ConvertToBitmap()
 
 		new_imagem1 = wx.ImageFromBitmap(imagem1).Scale(16, 16, wx.IMAGE_QUALITY_HIGH).ConvertToBitmap() #diminui a imagem para 16x16#
 		new_imagem2 = wx.ImageFromBitmap(imagem2).Scale(16, 16, wx.IMAGE_QUALITY_HIGH).ConvertToBitmap() #diminui a imagem para 16x16#
-		new_imagem3 = wx.ImageFromBitmap(imagem4).Scale(16, 16, wx.IMAGE_QUALITY_HIGH).ConvertToBitmap() #diminui a imagem para 16x16#
-		new_imagem4 = wx.ImageFromBitmap(self.imagem3).Scale(16, 16, wx.IMAGE_QUALITY_HIGH).ConvertToBitmap() #diminui a imagem para 16x16#
+		new_imagem3 = wx.ImageFromBitmap(imagem3).Scale(16, 16, wx.IMAGE_QUALITY_HIGH).ConvertToBitmap() #diminui a imagem para 16x16#
+		new_imagem4 = wx.ImageFromBitmap(imagem4).Scale(16, 16, wx.IMAGE_QUALITY_HIGH).ConvertToBitmap() #diminui a imagem para 16x16#
+		new_imagem5 = wx.ImageFromBitmap(self.imagem5).Scale(16, 16, wx.IMAGE_QUALITY_HIGH).ConvertToBitmap() #diminui a imagem para 16x16#
 
 		self.title = title
 
@@ -63,26 +65,30 @@ class meu_frame(wx.Frame):
 		barra_de_ferramentas = self.CreateToolBar()
 		barra_de_ferramentas.SetBackgroundColour('#BEBEBE')
 
-		tool1 = barra_de_ferramentas.AddSimpleTool(wx.NewId(), imagem1 , Tradutor("Adicionar novos jogos iso", dicionario), Tradutor(u"Selecionar imagens iso para adicionar a lista de jogos", dicionario))
-		tool2 = barra_de_ferramentas.AddSimpleTool(wx.NewId(), imagem2 , Tradutor("Atualizar", dicionario), Tradutor(u"Atualizar lista de jogos", dicionario))
-		tool3 = barra_de_ferramentas.AddSimpleTool(wx.NewId(), self.imagem3, Tradutor(u"Configurações", dicionario), Tradutor("Configurar o PhanterPS2", dicionario))
-		tool4 = barra_de_ferramentas.AddSimpleTool(wx.NewId(), imagem4 , Tradutor("Sobre", dicionario), Tradutor(u"Sobre o programa e autor", dicionario))
+		tool1 = barra_de_ferramentas.AddSimpleTool(wx.NewId(), imagem1 , Tradutor("Adicionar novo jogo ISO", dicionario), Tradutor(u"Selecionar imagens ISO para adicionar a lista de jogos", dicionario))
+		tool2 = barra_de_ferramentas.AddSimpleTool(wx.NewId(), imagem2, Tradutor(u'Adicionar múltiplos jogos ISO', dicionario), Tradutor(u'Selecionar vários ISOs para adicionar a lista de jogos', dicionario))
+		tool3 = barra_de_ferramentas.AddSimpleTool(wx.NewId(), imagem3 , Tradutor("Atualizar", dicionario), Tradutor(u"Atualizar lista de jogos", dicionario))
+		tool4 = barra_de_ferramentas.AddSimpleTool(wx.NewId(), imagem4, Tradutor(u"Configurações", dicionario), Tradutor("Configurar o PhanterPS2", dicionario))
+		tool5 = barra_de_ferramentas.AddSimpleTool(wx.NewId(), self.imagem5 , Tradutor("Sobre", dicionario), Tradutor(u"Sobre o programa e autor", dicionario))
 
 		barra_de_ferramentas.Realize()
 
 		Barra_de_menu = wx.MenuBar()
 		menu_arquivo = wx.Menu()
 
-		item1_menu_arquivo = wx.MenuItem(menu_arquivo, wx.ID_ANY, Tradutor("A&dicionar novo(s) iso(s)\tCtrl+A", dicionario), Tradutor(u"Selecionar imagens iso para adicionar a lista de jogos", dicionario))
+		item1_menu_arquivo = wx.MenuItem(menu_arquivo, wx.ID_ANY, Tradutor("A&dicionar novo ISO\tCtrl+A", dicionario), Tradutor(u"Selecionar imagens ISO para adicionar a lista de jogos", dicionario))
 		item1_menu_arquivo.SetBitmap(new_imagem1)
-		item2_menu_arquivo = wx.MenuItem(menu_arquivo,wx.ID_ANY, Tradutor("A&tualizar", dicionario), Tradutor(u"Atualizar lista de jogos", dicionario))
+		item2_menu_arquivo = wx.MenuItem(menu_arquivo, wx.ID_ANY, Tradutor(u'A&dicionar múltiplos jogos ISO\tCtrl+M', dicionario), Tradutor(u'Selecionar vários ISOs para adicionar a lista de jogos', dicionario))
 		item2_menu_arquivo.SetBitmap(new_imagem2)
-		item3_menu_arquivo = wx.MenuItem(menu_arquivo, wx.ID_ANY, Tradutor(u"Configurações", dicionario), Tradutor(u"Configurar o PhanterPS2", dicionario))
-		item3_menu_arquivo.SetBitmap(new_imagem4)
+		item3_menu_arquivo = wx.MenuItem(menu_arquivo,wx.ID_ANY, Tradutor("A&tualizar", dicionario), Tradutor(u"Atualizar lista de jogos", dicionario))
+		item3_menu_arquivo.SetBitmap(new_imagem3)
+		item4_menu_arquivo = wx.MenuItem(menu_arquivo, wx.ID_ANY, Tradutor(u"Configurações", dicionario), Tradutor(u"Configurar o PhanterPS2", dicionario))
+		item4_menu_arquivo.SetBitmap(new_imagem4)
 
 		menu_arquivo.AppendItem(item1_menu_arquivo)
 		menu_arquivo.AppendItem(item2_menu_arquivo)
 		menu_arquivo.AppendItem(item3_menu_arquivo)
+		menu_arquivo.AppendItem(item4_menu_arquivo)
 
 
 		Barra_de_menu.Append(menu_arquivo, Tradutor("&Arquivo", dicionario))
@@ -90,25 +96,29 @@ class meu_frame(wx.Frame):
 		menu_sobre = wx.Menu()
 
 		item1_menu_sobre = wx.MenuItem(menu_sobre, wx.ID_ANY, Tradutor(u"&Sobre\tF1", dicionario), Tradutor("Sobre o PhanterPS2", dicionario))
-		item1_menu_sobre.SetBitmap(new_imagem3)
+		item1_menu_sobre.SetBitmap(new_imagem5)
 		menu_sobre.AppendItem(item1_menu_sobre)
 		Barra_de_menu.Append(menu_sobre, Tradutor("Ajuda", dicionario))
 		self.Bind(wx.EVT_MENU, self.AbrirIso, item1_menu_arquivo)
-		self.Bind(wx.EVT_MENU, self.Atualizar, item2_menu_arquivo)
-		self.Bind(wx.EVT_MENU, self.Config, item3_menu_arquivo)
+		self.Bind(wx.EVT_MENU, self.MultiIso, item2_menu_arquivo)
+		self.Bind(wx.EVT_MENU, self.Atualizar, item3_menu_arquivo)
+		self.Bind(wx.EVT_MENU, self.Config, item4_menu_arquivo)
 		self.Bind(wx.EVT_MENU, self.Sobre, item1_menu_sobre)
 		self.Bind(wx.EVT_TOOL, self.AbrirIso, tool1)
-		self.Bind(wx.EVT_TOOL, self.Atualizar, tool2)
-		self.Bind(wx.EVT_TOOL, self.Config, tool3)
-		self.Bind(wx.EVT_TOOL, self.Sobre, tool4)
+		self.Bind(wx.EVT_TOOL, self.MultiIso, tool2)
+		self.Bind(wx.EVT_TOOL, self.Atualizar, tool3)
+		self.Bind(wx.EVT_TOOL, self.Config, tool4)
+		self.Bind(wx.EVT_TOOL, self.Sobre, tool5)
 		self.SetMenuBar(Barra_de_menu)
 
 		#self.painel_principal.Destroy()
 		self.painel_principal = wx.Panel(self, wx.ID_ANY) #Painel Pinricpal
 
+
 		sizer_panel_titulo = wx.GridBagSizer(0, 0) #sizers
 		sizer_panel = wx.GridBagSizer(0, 100)
-		sizer_panel_rodape = wx.GridBagSizer(0, 0)
+
+		sizer_panel_rodape = wx.GridSizer(cols=2, hgap=0, vgap=0)
 
 		#self.SendSizeEvent() #uncomente no atualizar
 
@@ -126,51 +136,60 @@ class meu_frame(wx.Frame):
 		self.imagens_jogos = imagens_jogos(os.path.join(self.pastadefault,'ART'))
 		logger.debug(self.imagens_jogos)
 		wx.Yield()
-		print self.imagens_jogos
+
 		for x in self.listjogos:
 			logger.debug('Construindo lista de jogos: retorno da função lista de jogos %s' %x)
 			sizer_jogos.Add(painel_de_jogos(self.painel_scroll, wx.ID_NEW, (0,0),(-1,110),
 				arquivo_do_jogo = x[0], codigo_do_jogo = x[1], nome_do_jogo = x[2], tamanho_do_jogo = x[3], lista_cover_art = self.imagens_jogos), 0, wx.ALIGN_CENTER|wx.ALL|wx.EXPAND,5)
 			#self.SendSizeEvent()
+		self.painel_principal.Show()
 		self.painel_scroll.SetWindowStyleFlag(wx.ALIGN_CENTER|wx.ALL|wx.EXPAND|wx.BORDER_DOUBLE)
 		self.painel_scroll.SetSizer(sizer_jogos)
 		self.painel_scroll.SetScrollbars(1, 1, -1, -1)
 
 		#rodapé
-		self.painel_info_e_acao = wx.Panel(self.painel_principal, wx.ID_ANY, (0,0),(-1,50), style = wx.ALIGN_CENTER|wx.ALL|wx.EXPAND)
-		text1 = wx.StaticText(self.painel_info_e_acao, wx.ID_ANY, Tradutor(u"Total de jogos", dicionario), (0,0), style = wx.TE_RICH)
-		form1 = wx.TextCtrl(self.painel_info_e_acao, wx.ID_ANY, str(self.jogos_e_info[1]), (0,0), style = wx.TE_RICH)
+		self.painel_info_e_acao = wx.Panel(self.painel_principal, wx.ID_ANY, (0,0),(-1,-1), style = wx.ALIGN_CENTER|wx.ALL|wx.EXPAND)
+	############ caixa info da esquerda
+		self.painel_info = wx.Panel(self.painel_info_e_acao, wx.ID_ANY,(0,0), (-1,-1), style = wx.ALIGN_CENTER| wx.ALL | wx.EXPAND)
+		sizer_painel_info = wx.GridBagSizer(0,0)
+		textTilulo1 = wx.StaticText(self.painel_info, wx.ID_ANY, Tradutor(u'INFORMAÇÕES GERAIS', dicionario), (0,0), style = wx.ALIGN_CENTER|wx.TE_RICH)
+		text1 = wx.StaticText(self.painel_info, wx.ID_ANY, Tradutor(u"Total de jogos", dicionario), (0,0), style = wx.TE_RICH)
+		form1 = wx.TextCtrl(self.painel_info, wx.ID_ANY, str(self.jogos_e_info[1]), (0,0), style = wx.TE_RICH)
 		form1.Enabled = False
-		text2 = wx.StaticText(self.painel_info_e_acao, wx.ID_ANY, Tradutor(u"Tamanho total", dicionario), (0,0), style = wx.TE_RICH)
-		form2 = wx.TextCtrl(self.painel_info_e_acao, wx.ID_ANY, convert_tamanho(self.jogos_e_info[2]), (0,0), style = wx.TE_RICH)
+		text2 = wx.StaticText(self.painel_info, wx.ID_ANY, Tradutor(u"Tamanho total", dicionario), (0,0), style = wx.TE_RICH)
+		form2 = wx.TextCtrl(self.painel_info, wx.ID_ANY, convert_tamanho(self.jogos_e_info[2]), (0,0), style = wx.TE_RICH)
 		form2.Enabled = False
+		sizer_painel_info.Add(textTilulo1, (0,0), (1,3), wx.ALIGN_CENTER | wx.ALL | wx.EXPAND, 5)
+		sizer_painel_info.Add(text1, (1,0), (1,1), wx.ALL |wx.ALIGN_CENTER_VERTICAL, 5)
+		sizer_painel_info.Add(form1, (1,1), (1,2), wx.ALL | wx.EXPAND, 5)
+		sizer_painel_info.Add(text2, (2,0), (1,1), wx.ALL |wx.ALIGN_CENTER_VERTICAL, 5)
+		sizer_painel_info.Add(form2, (2,1), (1,2), wx.ALL | wx.EXPAND, 5)
+		self.painel_info.SetSizerAndFit(sizer_painel_info)
+		sizer_painel_info.AddGrowableCol(2)
 
 	  ##########Caixa de ações
-		caixa_com_titulo = wx.StaticBox(self.painel_info_e_acao, wx.ID_ANY, Tradutor(u"Jogos Selecionados - Ação",dicionario))
-		sizer_caixa_com_titulo = wx.GridBagSizer(0,0)
-		text3 = wx.StaticText(caixa_com_titulo, wx.ID_ANY, Tradutor(u"Total de jogos", dicionario), (0,0), style = wx.TE_RICH)
-		self.form3 = wx.TextCtrl(caixa_com_titulo, wx.ID_ANY, '0', (0,0), style = wx.TE_RICH)
+		painel_acao = wx.Panel(self.painel_info_e_acao, wx.ID_ANY,(0,0), (-1,-1), style = wx.ALIGN_CENTER| wx.ALL | wx.EXPAND)
+		sizer_painel_acao = wx.GridBagSizer(0,0)
+		textTilulo2 = wx.StaticText(painel_acao, wx.ID_ANY, Tradutor(u'INFORMAÇÕES E AÇÕES DOS SELECIONADOS', dicionario), (0,0), style = wx.ALIGN_CENTER|wx.TE_RICH)
+		text3 = wx.StaticText(painel_acao, wx.ID_ANY, Tradutor(u"Total de jogos", dicionario), (0,0), style = wx.TE_RICH)
+		self.form3 = wx.TextCtrl(painel_acao, wx.ID_ANY, '0', (0,0), style = wx.TE_RICH)
 		self.form3.Enabled = False
-		text4 = wx.StaticText(caixa_com_titulo, wx.ID_ANY, Tradutor(u"Tamanho Total", dicionario), (0,0), style = wx.TE_RICH)
-		self.form4 = wx.TextCtrl(caixa_com_titulo, wx.ID_ANY, convert_tamanho(memoria['tamanho_total_dos_jogos']), (0,0), style = wx.TE_RICH)
+		text4 = wx.StaticText(painel_acao, wx.ID_ANY, Tradutor(u"Tamanho Total", dicionario), (0,0), style = wx.TE_RICH)
+		self.form4 = wx.TextCtrl(painel_acao, wx.ID_ANY, convert_tamanho(memoria['tamanho_total_dos_jogos']), (0,0), style = wx.TE_RICH)
 		self.form4.Enabled = False
+		sizer_painel_acao.Add(textTilulo2, (0,0), (1,3), wx.ALIGN_CENTER | wx.ALL | wx.EXPAND, 5)
+		sizer_painel_acao.Add(text3, (1,0), (1,1), wx.ALL |wx.ALIGN_CENTER_VERTICAL, 5)
+		sizer_painel_acao.Add(self.form3, (1,1), (1,2), wx.ALL | wx.EXPAND, 5)
+		sizer_painel_acao.Add(text4, (2,0), (1,1), wx.ALL |wx.ALIGN_CENTER_VERTICAL, 5)
+		sizer_painel_acao.Add(self.form4, (2,1), (1,2), wx.ALL | wx.EXPAND, 5)
 
-		sizer_caixa_com_titulo.Add(text3, (1,0), (1,1), wx.ALL | wx.EXPAND, 5)
-		sizer_caixa_com_titulo.Add(self.form3, (1,1), (1,2), wx.ALL | wx.EXPAND, 5)
-		sizer_caixa_com_titulo.Add(text4, (2,0), (1,1), wx.ALL | wx.EXPAND, 5)
-		sizer_caixa_com_titulo.Add(self.form4, (2,1), (1,2), wx.ALL | wx.EXPAND, 5)
-
-		caixa_com_titulo.SetSizerAndFit(sizer_caixa_com_titulo)
-		sizer_caixa_com_titulo.AddGrowableCol(1)
+		painel_acao.SetSizerAndFit(sizer_painel_acao)
+		sizer_painel_acao.AddGrowableCol(2)
 	  #FIM Caixa de ações
 
-		sizer_panel_rodape.Add(text1, (0,0), (1,1), wx.ALL | wx.EXPAND, 5)
-		sizer_panel_rodape.Add(form1, (0,1), (1,3), wx.ALL | wx.EXPAND, 5)
-		sizer_panel_rodape.Add(text2, (1,0), (1,1), wx.ALL | wx.EXPAND, 5)
-		sizer_panel_rodape.Add(form2, (1,1), (1,3), wx.ALL | wx.EXPAND, 5)
-		sizer_panel_rodape.Add(caixa_com_titulo, (0,4), (3,4), wx.ALL | wx.EXPAND, 5)
-		sizer_panel_rodape.AddGrowableCol(3)
-		sizer_panel_rodape.AddGrowableCol(4)
+		sizer_panel_rodape.Add(self.painel_info , 0, wx.ALIGN_CENTER|wx.ALL|wx.EXPAND,5)
+		sizer_panel_rodape.Add(painel_acao, 0, wx.ALIGN_CENTER|wx.ALL|wx.EXPAND,5)
+
 		self.painel_info_e_acao.SetSizerAndFit(sizer_panel_rodape)
 
 		self.Bind(wx.EVT_CHECKBOX, self.dofilho2) #No atualizar deve ser comentado
@@ -194,10 +213,12 @@ class meu_frame(wx.Frame):
 
 		self.painel_principal.Destroy()
 		self.painel_principal = wx.Panel(self, wx.ID_NEW) #Painel Pinricpal
+		self.painel_principal.Hide()
 
 		sizer_panel_titulo = wx.GridBagSizer(0, 0) #sizers
 		sizer_panel = wx.GridBagSizer(0, 100)
-		sizer_panel_rodape = wx.GridBagSizer(0, 0)
+
+		sizer_panel_rodape = wx.GridSizer(cols=2, hgap=0, vgap=0)
 
 		self.SendSizeEvent() #uncomente no atualizar
 
@@ -214,51 +235,60 @@ class meu_frame(wx.Frame):
 		sizer_jogos = wx.GridSizer(cols=2, hgap=0, vgap=0)
 		self.imagens_jogos = imagens_jogos(os.path.join(self.pastadefault,'ART'))
 		logger.debug(self.imagens_jogos)
-		self.painel_scroll.Hide()
+		wx.Yield()
+
 		for x in self.listjogos:
 			logger.debug('Construindo lista de jogos: retorno da função lista de jogos %s' %x)
 			sizer_jogos.Add(painel_de_jogos(self.painel_scroll, wx.ID_NEW, (0,0),(-1,110),
 				arquivo_do_jogo = x[0], codigo_do_jogo = x[1], nome_do_jogo = x[2], tamanho_do_jogo = x[3], lista_cover_art = self.imagens_jogos), 0, wx.ALIGN_CENTER|wx.ALL|wx.EXPAND,5)
 			self.SendSizeEvent()
+		self.painel_principal.Show()
 		self.painel_scroll.SetWindowStyleFlag(wx.ALIGN_CENTER|wx.ALL|wx.EXPAND|wx.BORDER_DOUBLE)
 		self.painel_scroll.SetSizer(sizer_jogos)
 		self.painel_scroll.SetScrollbars(1, 1, -1, -1)
-		self.painel_scroll.Show()
 
 		#rodapé
-		self.painel_info_e_acao = wx.Panel(self.painel_principal, wx.ID_NEW, (0,0),(-1,50), style = wx.ALIGN_CENTER|wx.ALL|wx.EXPAND)
-		text1 = wx.StaticText(self.painel_info_e_acao, wx.ID_NEW, Tradutor(u"Total de jogos", dicionario), (0,0), style = wx.TE_RICH)
-		form1 = wx.TextCtrl(self.painel_info_e_acao, wx.ID_NEW, str(self.jogos_e_info[1]), (0,0), style = wx.TE_RICH)
+		self.painel_info_e_acao = wx.Panel(self.painel_principal, wx.ID_NEW, (0,0),(-1,-1), style = wx.ALIGN_CENTER|wx.ALL|wx.EXPAND)
+	############ caixa info da esquerda
+		self.painel_info = wx.Panel(self.painel_info_e_acao, wx.ID_NEW,(0,0), (-1,-1), style = wx.ALIGN_CENTER| wx.ALL | wx.EXPAND)
+		sizer_painel_info = wx.GridBagSizer(0,0)
+		textTilulo1 = wx.StaticText(self.painel_info, wx.ID_NEW, Tradutor(u'INFORMAÇÕES GERAIS', dicionario), (0,0), style = wx.ALIGN_CENTER|wx.TE_RICH)
+		text1 = wx.StaticText(self.painel_info, wx.ID_NEW, Tradutor(u"Total de jogos", dicionario), (0,0), style = wx.TE_RICH)
+		form1 = wx.TextCtrl(self.painel_info, wx.ID_NEW, str(self.jogos_e_info[1]), (0,0), style = wx.TE_RICH)
 		form1.Enabled = False
-		text2 = wx.StaticText(self.painel_info_e_acao, wx.ID_NEW, Tradutor(u"Tamanho total", dicionario), (0,0), style = wx.TE_RICH)
-		form2 = wx.TextCtrl(self.painel_info_e_acao, wx.ID_NEW, convert_tamanho(self.jogos_e_info[2]), (0,0), style = wx.TE_RICH)
+		text2 = wx.StaticText(self.painel_info, wx.ID_NEW, Tradutor(u"Tamanho total", dicionario), (0,0), style = wx.TE_RICH)
+		form2 = wx.TextCtrl(self.painel_info, wx.ID_NEW, convert_tamanho(self.jogos_e_info[2]), (0,0), style = wx.TE_RICH)
 		form2.Enabled = False
-
-		caixa_com_titulo = wx.StaticBox(self.painel_info_e_acao, wx.ID_NEW, Tradutor(u"Jogos Selecionados - Ação",dicionario))
-		sizer_caixa_com_titulo = wx.GridBagSizer(0,0)
-		text3 = wx.StaticText(caixa_com_titulo, wx.ID_NEW, Tradutor(u"Total de jogos", dicionario), (0,0), style = wx.TE_RICH)
-		self.form3 = wx.TextCtrl(caixa_com_titulo, wx.ID_NEW, '0', (0,0), style = wx.TE_RICH)
+		sizer_painel_info.Add(textTilulo1, (0,0), (1,3), wx.ALIGN_CENTER | wx.ALL | wx.EXPAND, 5)
+		sizer_painel_info.Add(text1, (1,0), (1,1), wx.ALL | wx.EXPAND, 5)
+		sizer_painel_info.Add(form1, (1,1), (1,2), wx.ALL | wx.EXPAND, 5)
+		sizer_painel_info.Add(text2, (2,0), (1,1), wx.ALL | wx.EXPAND, 5)
+		sizer_painel_info.Add(form2, (2,1), (1,2), wx.ALL | wx.EXPAND, 5)
+		self.painel_info.SetSizerAndFit(sizer_painel_info)
+		sizer_painel_info.AddGrowableCol(2)
+	  ##########Caixa de ações
+		painel_acao = wx.Panel(self.painel_info_e_acao, wx.ID_NEW,(0,0), (-1,-1), style = wx.ALIGN_CENTER| wx.ALL | wx.EXPAND)
+		sizer_painel_acao = wx.GridBagSizer(0,0)
+		textTilulo2 = wx.StaticText(painel_acao, wx.ID_NEW, Tradutor(u'INFORMAÇÕES E AÇÕES DOS SELECIONADOS', dicionario), (0,0), style = wx.ALIGN_CENTER|wx.TE_RICH)
+		text3 = wx.StaticText(painel_acao, wx.ID_NEW, Tradutor(u"Total de jogos", dicionario), (0,0), style = wx.TE_RICH)
+		self.form3 = wx.TextCtrl(painel_acao, wx.ID_NEW, '0', (0,0), style = wx.TE_RICH)
 		self.form3.Enabled = False
-		text4 = wx.StaticText(caixa_com_titulo, wx.ID_NEW, Tradutor(u"Tamanho Total", dicionario), (0,0), style = wx.TE_RICH)
-		self.form4 = wx.TextCtrl(caixa_com_titulo, wx.ID_NEW, convert_tamanho(memoria['tamanho_total_dos_jogos']), (0,0), style = wx.TE_RICH)
+		text4 = wx.StaticText(painel_acao, wx.ID_NEW, Tradutor(u"Tamanho Total", dicionario), (0,0), style = wx.TE_RICH)
+		self.form4 = wx.TextCtrl(painel_acao, wx.ID_NEW, convert_tamanho(memoria['tamanho_total_dos_jogos']), (0,0), style = wx.TE_RICH)
 		self.form4.Enabled = False
+		sizer_painel_acao.Add(textTilulo2, (0,0), (1,3), wx.ALIGN_CENTER | wx.ALL | wx.EXPAND, 5)
+		sizer_painel_acao.Add(text3, (1,0), (1,1), wx.ALL | wx.EXPAND, 5)
+		sizer_painel_acao.Add(self.form3, (1,1), (1,2), wx.ALL | wx.EXPAND, 5)
+		sizer_painel_acao.Add(text4, (2,0), (1,1), wx.ALL | wx.EXPAND, 5)
+		sizer_painel_acao.Add(self.form4, (2,1), (1,2), wx.ALL | wx.EXPAND, 5)
 
-		sizer_caixa_com_titulo.Add(text3, (1,0), (1,1), wx.ALL | wx.EXPAND, 5)
-		sizer_caixa_com_titulo.Add(self.form3, (1,1), (1,2), wx.ALL | wx.EXPAND, 5)
-		sizer_caixa_com_titulo.Add(text4, (2,0), (1,1), wx.ALL | wx.EXPAND, 5)
-		sizer_caixa_com_titulo.Add(self.form4, (2,1), (1,2), wx.ALL | wx.EXPAND, 5)
+		painel_acao.SetSizerAndFit(sizer_painel_acao)
+		sizer_painel_acao.AddGrowableCol(2)
+	  #FIM Caixa de ações
 
-		caixa_com_titulo.SetSizerAndFit(sizer_caixa_com_titulo)
-		sizer_caixa_com_titulo.AddGrowableCol(1)
+		sizer_panel_rodape.Add(self.painel_info , 0, wx.ALIGN_CENTER|wx.ALL|wx.EXPAND,5)
+		sizer_panel_rodape.Add(painel_acao, 0, wx.ALIGN_CENTER|wx.ALL|wx.EXPAND,5)
 
-
-		sizer_panel_rodape.Add(text1, (0,0), (1,1), wx.ALL | wx.EXPAND, 5)
-		sizer_panel_rodape.Add(form1, (0,1), (1,3), wx.ALL | wx.EXPAND, 5)
-		sizer_panel_rodape.Add(text2, (1,0), (1,1), wx.ALL | wx.EXPAND, 5)
-		sizer_panel_rodape.Add(form2, (1,1), (1,3), wx.ALL | wx.EXPAND, 5)
-		sizer_panel_rodape.Add(caixa_com_titulo, (0,4), (3,4), wx.ALL | wx.EXPAND, 5)
-		sizer_panel_rodape.AddGrowableCol(3)
-		sizer_panel_rodape.AddGrowableCol(4)
 		self.painel_info_e_acao.SetSizerAndFit(sizer_panel_rodape)
 
 		#self.Bind(wx.EVT_CHECKBOX, self.dofilho2) #No atualizar deve ser comentado
@@ -278,7 +308,7 @@ class meu_frame(wx.Frame):
 
 	#ações
 
-	wildcard = "Imagem iso (*.iso)|*.iso|All files (*.*)|*.*"
+	wildcard = "%s (*.iso)|*.iso" %(Tradutor('Imagem ISO',dicionario))
 	def AbrirIso (self, event):
 		self.janeladlg = wx.FileDialog(self, Tradutor(u"Selecionando Imagem...", dicionario), corrente, style=wx.OPEN, wildcard=self.wildcard)
 		if self.janeladlg.ShowModal() == wx.ID_OK:
@@ -287,6 +317,24 @@ class meu_frame(wx.Frame):
 			self.ReadFile(self.arquivoiso[0])
 			logger.debug(u'%s, %s, %s' %(self.resultados[0][0], self.resultados[1][0], self.resultados[2][0]))
 			self.frame = janela_adicionar_iso(self, wx.ID_ANY, Tradutor(u"Adicione o nome e código do jogo", dicionario), self.resultados[0], self.resultados[1], self.resultados[2], self.resultados[3],self.listjogos )
+			self.frame.Show(True)
+	def MultiIso(self, event):
+		self.janeladlg = wx.FileDialog(self, Tradutor(u"Selecionando Imagens...", dicionario), corrente, style=wx.MULTIPLE, wildcard=self.wildcard)
+		if self.janeladlg.ShowModal() == wx.ID_OK:
+			self.arquivoiso = self.janeladlg.GetPaths()
+			lis = []
+			tam_tot = 0
+			for d in self.arquivoiso:
+				ver = verifica_jogo(d)
+				res = ver.resultado_final
+				tam_tot+= res[3]
+				uno=[res[0], res[1], res[2], res[3]]
+				lis.append(uno)
+			lista_de_jogoss = [lis, tam_tot]
+			print lista_de_jogoss
+
+			self.janeladlg.Destroy()
+			self.frame = frame_adicionar_multiplos(self.title, lista_de_jogoss[0],  lista_de_jogoss[1],(-1,-1), (500,600))
 			self.frame.Show(True)
 
 	def  Atualizar(self, event):
@@ -348,22 +396,23 @@ class painel_de_jogos(wx.Panel):
 	def __init__ (self, parent, ID, pos, size, arquivo_do_jogo, codigo_do_jogo, nome_do_jogo, tamanho_do_jogo, lista_cover_art):
 		wx.Panel.__init__(self, parent, wx.ID_ANY, pos, size, wx.EXPAND)
 		self.arquivo_do_jogo = arquivo_do_jogo
+		self.condigo_do_jogo = codigo_do_jogo
 		self.parent = parent
 		self.tamanho_total=0
 		pastadefault = conf_prog.pasta_padrao_jogos
 		self.tamanho_do_jogo = tamanho_do_jogo
 		self.cover_art=lista_cover_art.localiza_cover_art(codigo_do_jogo)
 		self.endereco_da_imagem = os.path.join(self.cover_art[0], self.cover_art[1])
-		try:
-			if imagem_check.leitor_configuracao(self.endereco_da_imagem) == 'OK':
-				pass
-			else:
-				retirar_exitf_imagem(self.endereco_da_imagem)
-				imagem_check.mudar_configuracao(self.endereco_da_imagem, 'OK')
-			imagem5 = wx.Image(self.endereco_da_imagem, wx.BITMAP_TYPE_ANY).ConvertToBitmap()
-		except:
-			imagem_check.mudar_configuracao(self.endereco_da_imagem, 'Falhou')
-			imagem5 = wx.Image(os.path.join(corrente, 'imagens', 'erro.jpg'), wx.BITMAP_TYPE_ANY).ConvertToBitmap()
+		#try:
+		if imagem_check.leitor_configuracao(self.endereco_da_imagem) == 'OK':
+			pass
+		else:
+			retirar_exitf_imagem(self.endereco_da_imagem)
+			imagem_check.mudar_configuracao(self.endereco_da_imagem, 'OK')
+		imagem5 = wx.Image(self.endereco_da_imagem, wx.BITMAP_TYPE_ANY).ConvertToBitmap()
+		#except:
+		#	imagem_check.mudar_configuracao(self.endereco_da_imagem, 'Falhou')
+		#	imagem5 = wx.Image(os.path.join(corrente, 'imagens', 'erro.jpg'), wx.BITMAP_TYPE_ANY).ConvertToBitmap()
 
 		new_imagem5 = wx.ImageFromBitmap(imagem5).Scale(70, 100, wx.IMAGE_QUALITY_NORMAL).ConvertToBitmap()
 		mask = wx.Mask(new_imagem5, wx.BLUE)
@@ -398,13 +447,13 @@ class painel_de_jogos(wx.Panel):
 		self.MeuGridsizer = wx.GridBagSizer(3, 5)
 
 		self.MeuGridsizer.Add(self.botao_imagem, (0,0),(4,2),  wx.ALL|wx.EXPAND, 2)
-		self.MeuGridsizer.Add(text0, (0, 2), (1,1), wx.ALIGN_RIGHT, 2)
+		self.MeuGridsizer.Add(text0, (0, 2), (1,1), wx.ALIGN_RIGHT|wx.ALIGN_CENTER_VERTICAL, 2)
 		self.MeuGridsizer.Add(self.form0, (0, 3), (1,4), wx.ALL|wx.EXPAND, 2)
-		self.MeuGridsizer.Add(text1, (1, 2), (1,1), wx.ALIGN_RIGHT, 2)
+		self.MeuGridsizer.Add(text1, (1, 2), (1,1), wx.ALIGN_RIGHT|wx.ALIGN_CENTER_VERTICAL, 2)
 		self.MeuGridsizer.Add(self.form1, (1, 3), (1,4), wx.ALL|wx.EXPAND, 2)
-		self.MeuGridsizer.Add(text2, (2, 2), (1,1), wx.ALIGN_RIGHT, 2)
+		self.MeuGridsizer.Add(text2, (2, 2), (1,1), wx.ALIGN_RIGHT|wx.ALIGN_CENTER_VERTICAL, 2)
 		self.MeuGridsizer.Add(self.form2, (2, 3), (1,4), wx.ALL|wx.EXPAND, 2)
-		self.MeuGridsizer.Add(text3, (3, 2), (1,1), wx.ALIGN_RIGHT, 2)
+		self.MeuGridsizer.Add(text3, (3, 2), (1,1), wx.ALIGN_RIGHT|wx.ALIGN_CENTER_VERTICAL, 2)
 		self.MeuGridsizer.Add(self.form3, (3, 3), (1,4), wx.ALL|wx.EXPAND, 2)
 		self.MeuGridsizer.Add(self.radio, (4, 0),(3,2), wx.ALIGN_CENTER, 0)
 		self.MeuGridsizer.Add(self.botao_renomear, (4,2), (2,1), wx.ALIGN_CENTER, 0)
@@ -520,19 +569,37 @@ class painel_de_jogos(wx.Panel):
 		else:
 			tipo = ''
 
-		self.objcopiar = Copiar_para(self, wx.ID_ANY, 'Copiar para...', self.form2.GetValue(), self.form0.GetValue(), nome_do_jogo, tamanho_do_jogo = self.tamanho_do_jogo, destino='',  tipo_origem = tipo, tipo_destino='')
+		self.objcopiar = Copiar_para(self, wx.ID_ANY, Tradutor('Copiar para...', dicionario), self.form2.GetValue(), self.form0.GetValue(), nome_do_jogo, tamanho_do_jogo = self.tamanho_do_jogo, destino='',  tipo_origem = tipo, tipo_destino='')
 		self.objcopiar.Show()
 
 
-	wildcard = "Imagem (*.jpg)|*.jpg|Imagem (*.png)|*.png|Todos os arquivos (*.*)|*.*"
+	
 	def MudarImagem(self, event):
-		pass
-		# dlg = wx.FileDialog(self, Tradutor(u"Selecionando Imagem...", dicionario), corrente, style=wx.OPEN , wildcard=self.wildcard)
-		# if dlg.ShowModal() == wx.ID_OK:
-		# 	self.arquivoimg = dlg.GetPaths()
-		# 	dlg.Destroy()
-		# 	if not self.endereco_da_imagem == self.arquivoimg[0]:
-		# 		print 'mudou'
+		wildcardx = "%s (*.jpg)|*.jpg|%s (*.png)|*.png" %(Tradutor('Imagem jpg', dicionario),Tradutor('Imagem png',dicionario))
+		dlg = wx.FileDialog(self, Tradutor(u"Selecionando Imagem...", dicionario), os.path.dirname(self.endereco_da_imagem), style=wx.OPEN , wildcard=wildcardx)
+		if dlg.ShowModal() == wx.ID_OK:
+			self.arquivoimg = dlg.GetPath()
+			logger.info('%s' %self.arquivoimg)
+			dlg.Destroy()
+			if not self.endereco_da_imagem == self.arquivoimg[0]:
+				retirar_exitf_imagem(self.arquivoimg)
+				extencao = self.arquivoimg.split('.')[-1]
+				pasta_art = conf_prog.leitor_configuracao(chave='pasta_ART')
+				nome_da_imagem = "%s_COV.%s" %(self.condigo_do_jogo, extencao)
+				with open(self.arquivoimg, 'rb') as imgdfg:
+					conteudo = imgdfg.read()
+
+					destinodfg = os.path.join(pasta_art, nome_da_imagem)
+					print destinodfg
+					with open(destinodfg, 'wb') as binaimagem:
+						binaimagem.write(conteudo)
+
+				imagem_check.mudar_configuracao(destinodfg, 'OK')
+				i = wx.Image(os.path.join(pasta_art, nome_da_imagem), wx.BITMAP_TYPE_ANY).ConvertToBitmap()
+				isv = wx.ImageFromBitmap(i).Scale(70, 100, wx.IMAGE_QUALITY_NORMAL).ConvertToBitmap()
+				self.botao_imagem.SetBitmapDisabled(isv)
+			dlg.Destroy()				
+
 
 	def Selecionado(self, event):
 		valor_do_radio = self.radio.GetValue()
@@ -547,6 +614,157 @@ class painel_de_jogos(wx.Panel):
 		memoria['tamanho_total_dos_jogos'] = atual
 		memoria['jogos_selecionados'] = selecionados
 		
+		wx.PostEvent(self.parent, event)
+
+class frame_adicionar_multiplos(wx.Frame):
+	def __init__ (self, title, lista_de_jogos, total_geral, pos, size):
+		wx.Frame.__init__(self, None, wx.ID_ANY, title, pos, size)
+		self.listjogos=lista_de_jogos
+		self.lista_de_selecionados=[]
+		self.pastadefault = conf_prog.pasta_padrao_jogos
+		self.tamanho_vindo_do_filho = 0
+
+		#self.painel_principal.Destroy()
+		self.painel_principal = wx.Panel(self, wx.ID_ANY) #Painel Pinricpal
+
+		sizer_panel_titulo = wx.GridBagSizer(0, 0) #sizers
+		sizer_panel = wx.GridBagSizer(0, 100)
+
+		sizer_panel_rodape = wx.GridSizer(cols=1, hgap=0, vgap=0)
+
+		#self.SendSizeEvent() #uncomente no atualizar
+
+		self.painel_cabecalho = wx.Panel(self.painel_principal, wx.ID_ANY, (0,0),(-1,25), style = wx.ALIGN_CENTER|wx.ALL|wx.EXPAND)
+		text0 = wx.StaticText(self.painel_cabecalho, wx.ID_ANY, Tradutor(u"Copiando multiplos jogos", dicionario), (0, 0), style = wx.TE_RICH)
+		font = wx.Font(18, wx.DECORATIVE, wx.NORMAL, wx.BOLD)
+		text0.SetFont(font)
+		sizer_panel_titulo.Add(text0, (0,0), (1,1), wx.ALIGN_CENTER, 5)
+		sizer_panel_titulo.AddGrowableCol(0)
+		self.painel_cabecalho.SetSizerAndFit(sizer_panel_titulo)
+
+		self.painel_scroll = wx.ScrolledWindow(self.painel_principal, wx.ID_ANY, (0,0),(-1,200))		
+		sizer_jogos = wx.BoxSizer(wx.VERTICAL)
+		self.imagens_jogos = imagens_jogos(os.path.join(self.pastadefault,'ART'))
+		logger.debug(self.imagens_jogos)
+		wx.Yield()
+		linha_horizontal = wx.StaticLine(self.painel_scroll, id=wx.ID_ANY, pos=(0,0), size=(-1,-1),
+								style=wx.LI_HORIZONTAL| wx.BORDER_DOUBLE)
+		sizer_jogos.Add(linha_horizontal, 0, wx.ALIGN_CENTER, 5)
+		self.tamanho_selecionado = 0
+		tot_selecionado = 0
+		id_jogos = 0
+
+		for x in self.listjogos:
+			id_jogos +=1
+			ppp = painel_lista_de_jogos(self.painel_scroll, wx.ID_NEW, (0,0),(-1,-1),
+				arquivo_do_jogo = x[0], codigo_do_jogo = x[1], nome_do_jogo = x[2], tamanho_do_jogo = x[3], id_jogo = id_jogos, lista_cover_art = self.imagens_jogos)
+			sizer_jogos.Add(ppp, 0, wx.ALIGN_CENTER|wx.ALL|wx.EXPAND,0)
+			self.SendSizeEvent()
+			if not ppp.tamanho_computado==0:
+				tot_selecionado+=1
+
+
+			self.tamanho_selecionado +=ppp.tamanho_computado
+		memoria['multiplos_selecionados'] = [tot_selecionado, self.tamanho_selecionado]
+
+			
+		self.painel_scroll.SetWindowStyleFlag(wx.ALIGN_CENTER|wx.ALL|wx.EXPAND|wx.BORDER_DOUBLE)
+		self.painel_scroll.SetSizer(sizer_jogos)
+		self.painel_scroll.SetScrollbars(1, 1, -1, -1)
+
+		#rodapé
+		self.painel_botao_confirmar = wx.Panel(self.painel_principal, wx.ID_ANY, (0,0),(-1,-1), style = wx.ALIGN_CENTER|wx.ALL|wx.EXPAND)
+
+		self.botao_confirmar = wx.Button(self.painel_botao_confirmar, wx.ID_ANY, 'OK')
+		self.Bind(wx.EVT_BUTTON, self.Confirmar, self.botao_confirmar)
+		sizer_panel_rodape.Add(self.botao_confirmar , 0, wx.ALIGN_CENTER|wx.ALL, 5)
+
+
+		self.painel_botao_confirmar.SetSizerAndFit(sizer_panel_rodape)
+
+
+
+		sizer_panel.Add(self.painel_cabecalho, (0,0),(1,1), wx.ALL|wx.EXPAND, 5)
+		sizer_panel.Add(self.painel_scroll, (1,0),(3,1), wx.ALL|wx.EXPAND, 5)
+		sizer_panel.Add(self.painel_botao_confirmar, (4,0),(1,1), wx.ALL|wx.EXPAND, 5)
+		sizer_panel.AddGrowableCol(0)
+		sizer_panel.AddGrowableRow(1)
+		self.painel_principal.SetSizerAndFit(sizer_panel)
+
+
+		# self.Bind(wx.EVT_BUTTON, self.dofilho) #No atualizar deve ser comentado
+		self.Layout()
+		self.CenterOnScreen()
+		self.SendSizeEvent()
+		self.Bind(wx.EVT_CHECKBOX, self.DoFilho)
+	def DoFilho (self, event):
+		print 'do filho'
+
+
+	def Confirmar(self, event):
+		pass
+
+class painel_lista_de_jogos(wx.Panel):
+	def __init__ (self, parent, ID, pos, size, arquivo_do_jogo, codigo_do_jogo, nome_do_jogo, tamanho_do_jogo, id_jogo, lista_cover_art):
+		wx.Panel.__init__(self, parent, wx.ID_ANY, pos, size, wx.EXPAND)
+		self.arquivo_do_jogo = arquivo_do_jogo
+		self.condigo_do_jogo = codigo_do_jogo[0]
+		self.parent = parent
+		self.tamanho_total=0
+		pastadefault = conf_prog.pasta_padrao_jogos
+		self.tamanho_do_jogo = tamanho_do_jogo
+		self.tamanho_computado = tamanho_do_jogo
+		print codigo_do_jogo
+		if codigo_do_jogo[0] == False or codigo_do_jogo[1] == False:
+			self.status = u'ERRO'
+			self.condigo_do_jogo = 'XXXX_000.00'
+			self.tamanho_computado=0
+		else:
+			self.status = 'OK'
+
+		text0 = wx.StaticText(self, wx.ID_ANY, Tradutor(u"Código:", dicionario), (0, 0), style = wx.TE_RICH|  wx.ALIGN_CENTER_VERTICAL )
+		self.form0 = wx.TextCtrl( self, wx.ID_ANY, u'%s' %self.condigo_do_jogo,(0,0), (85, -1), style = wx.TE_RICH)
+		self.form0.Enabled = False if self.status == "OK" else True
+		text1 = wx.StaticText(self, wx.ID_ANY, Tradutor(u"Nome:", dicionario), (0, 0), style = wx.TE_RICH)
+		self.form1 = wx.TextCtrl( self, wx.ID_ANY, nome_do_jogo[0],(0,0), (200,-1), style = wx.TE_RICH)
+		self.form1.Enabled = False if not nome_do_jogo[0] == 'NOME_DO_JOGO' else True
+		text2 = wx.StaticText(self, wx.ID_ANY, Tradutor("Arquivo:", dicionario), (0, 0), style = wx.TE_RICH)
+		self.form2 = wx.TextCtrl( self, wx.ID_ANY, self.arquivo_do_jogo[0],(0,0),  style = wx.TE_RICH)
+		self.form2.Enabled = False
+		text3 = wx.StaticText(self, wx.ID_ANY, Tradutor("Tamanho:", dicionario), (0, 0), style = wx.TE_RICH)
+		self.form3 = wx.TextCtrl( self, wx.ID_ANY, convert_tamanho(self.tamanho_do_jogo),(0,0), style = wx.TE_RICH)
+		self.form3.Enabled = False
+		self.radio = wx.CheckBox(self, wx.ID_ANY, Tradutor("Selecionar", dicionario))
+
+		self.radio.SetValue(True if self.status == "OK" else False)
+		self.Bind(wx.EVT_CHECKBOX, self.Selecionado, self.radio)
+		text4 = wx.StaticText(self, wx.ID_ANY, Tradutor("Status:", dicionario), (0, 0), style = wx.TE_RICH)
+		self.form4 = wx.TextCtrl( self, wx.ID_ANY, self.status,(0,0), (50,-1), style = wx.TE_RICH)
+		self.form4.Enabled = False
+		linha = wx.StaticLine(self, id=wx.ID_ANY, pos=(0,0), size=(-1,-1),
+									style=wx.LI_HORIZONTAL| wx.BORDER_DOUBLE)
+
+		self.MeuGridsizer = wx.GridBagSizer(0, 5)
+
+		self.MeuGridsizer.Add(text0, (0, 1), (1,1), wx.ALIGN_RIGHT| wx.ALIGN_CENTER_VERTICAL, 0)
+		self.MeuGridsizer.Add(self.form0, (0, 2), (1,1), wx.ALL|wx.EXPAND, 0)
+		self.MeuGridsizer.Add(text1, (0, 3), (1,1), wx.ALIGN_RIGHT| wx.ALIGN_CENTER_VERTICAL, 0)
+		self.MeuGridsizer.Add(self.form1, (0, 4), (1,1), wx.ALL|wx.EXPAND, 0)
+		self.MeuGridsizer.Add(text2, (0, 5), (1,1), wx.ALIGN_RIGHT| wx.ALIGN_CENTER_VERTICAL, 0)
+		self.MeuGridsizer.Add(self.form2, (0, 6), (1,1), wx.ALL|wx.EXPAND, 0)
+		self.MeuGridsizer.Add(text3, (0, 7), (1,1), wx.ALIGN_RIGHT| wx.ALIGN_CENTER_VERTICAL, 0)
+		self.MeuGridsizer.Add(self.form3, (0, 8), (1,2), wx.ALL|wx.EXPAND, 0)
+		self.MeuGridsizer.Add(text4, (0, 10), (1,1), wx.ALIGN_RIGHT| wx.ALIGN_CENTER_VERTICAL, 0)
+		self.MeuGridsizer.Add(self.form4, (0, 11), (1,1), wx.ALL|wx.EXPAND, 0)
+		self.MeuGridsizer.Add(self.radio, (0, 12),(1,1), wx.ALL|wx.EXPAND, 0)
+		self.MeuGridsizer.Add(linha, (1,0),(1,13), wx.ALL|wx.EXPAND, 5)
+		self.MeuGridsizer.AddGrowableCol(6)
+
+		self.SetSizerAndFit(self.MeuGridsizer)
+		self.Centre()
+		self.Layout()
+	def Selecionado (self, event):
+		memoria['multiplos_jogoselecionado_%s' %id_jogo] = self.radio.GetValue()
 		wx.PostEvent(self.parent, event)
 
 class sobre(wx.Frame):
@@ -629,7 +847,9 @@ class painel_configuracao (wx.Frame):
 		self.Bind(wx.EVT_BUTTON, self.PegaPastaJogo, botao0)
 		text1 = wx.StaticText(painel, wx.ID_ANY, Tradutor(u"Arquivos de Tradução",dicionario), (0, 0))
 		self.form1 = wx.TextCtrl(painel, wx.ID_ANY, "",(0,0), (250,-1))
-		self.form0.Enabled = False
+		self.form1.Enabled = False
+		botao1 = wx.Button(painel, wx.ID_ANY, '...', (0,0), (20,20))
+		self.Bind(wx.EVT_BUTTON, self.PegaArquivoTradu, botao1)
 		linha_horizontal = wx.StaticLine(painel, id=wx.ID_ANY, pos=(0,0), size=(-1,-1),
 										style=wx.LI_HORIZONTAL| wx.BORDER_DOUBLE , name='wx.StaticLineNameStr')
 		text2 = wx.StaticText(painel, wx.ID_ANY, Tradutor(u"Pasta de DVD",dicionario), (0, 0))
@@ -647,27 +867,27 @@ class painel_configuracao (wx.Frame):
 		self.form5.Enabled = False
 
 		self.form1.Enabled = False
-		botao1 = wx.Button(painel, wx.ID_ANY, '...', (0,0), (20,20))
+
 		botaook = wx.Button(painel, wx.ID_OK, 'OK', (0,0))
 		self.Bind(wx.EVT_BUTTON, self.Confirmar, botaook)
 
 		sizer = wx.GridBagSizer(0, 10)
 		sizer2 = wx.GridBagSizer(0, 0)
 
-		sizer.Add(text0, (1, 1), (1,1), wx.ALIGN_RIGHT, 2)
+		sizer.Add(text0, (1, 1), (1,1), wx.ALIGN_RIGHT|wx.ALIGN_CENTER_VERTICAL, 2)
 		sizer.Add(self.form0, (1, 2), (1,2), wx.ALL|wx.EXPAND, 2)
 		sizer.Add(botao0, (1, 4), (1,4), wx.ALL, 2)
-		sizer.Add(text1, (2, 1), (1,1), wx.ALIGN_RIGHT, 2)
+		sizer.Add(text1, (2, 1), (1,1), wx.ALIGN_RIGHT|wx.ALIGN_CENTER_VERTICAL, 2)
 		sizer.Add(self.form1, (2, 2), (1,2), wx.ALL|wx.EXPAND, 2)
 		sizer.Add(botao1, (2, 4), (1,4), wx.ALL, 2)
 		sizer.Add(linha_horizontal, (3, 1), (1,5), wx.ALL|wx.EXPAND|wx.ALIGN_CENTER, 4)
-		sizer.Add(text2, (4, 1), (1,1), wx.ALIGN_RIGHT, 2)
+		sizer.Add(text2, (4, 1), (1,1), wx.ALIGN_RIGHT|wx.ALIGN_CENTER_VERTICAL, 2)
 		sizer.Add(self.form2, (4, 2), (1,2), wx.ALL|wx.EXPAND, 2)
-		sizer.Add(text3, (5, 1), (1,1), wx.ALIGN_RIGHT, 2)
+		sizer.Add(text3, (5, 1), (1,1), wx.ALIGN_RIGHT|wx.ALIGN_CENTER_VERTICAL, 2)
 		sizer.Add(self.form3, (5, 2), (1,2), wx.ALL|wx.EXPAND, 2)
-		sizer.Add(text4, (6, 1), (1,1), wx.ALIGN_RIGHT, 2)
+		sizer.Add(text4, (6, 1), (1,1), wx.ALIGN_RIGHT|wx.ALIGN_CENTER_VERTICAL, 2)
 		sizer.Add(self.form4, (6, 2), (1,2), wx.ALL|wx.EXPAND, 2)
-		sizer.Add(text5, (7, 1), (1,1), wx.ALIGN_RIGHT, 2)
+		sizer.Add(text5, (7, 1), (1,1), wx.ALIGN_RIGHT|wx.ALIGN_CENTER_VERTICAL, 2)
 		sizer.Add(self.form5, (7, 2), (1,2), wx.ALL|wx.EXPAND, 2)
 		sizer.Add(botaook, (9,0), (2,7), wx.ALL|wx.ALIGN_CENTER, 10)	
 
@@ -693,7 +913,13 @@ class painel_configuracao (wx.Frame):
 			self.form4.SetValue(self.ART)
 			self.form5.SetValue(self.CFG)
 			dlg.Destroy()
-
+	
+	def PegaArquivoTradu (self,event):
+		self.wildcard2 = u"%s (*.lng)|*.lng" %(Tradutor(u'Arquivo de Tradução', dicionario))
+		dlg2 = wx.FileDialog(self, Tradutor(u'Selecionando arquivo de tradução', dicionario), corrente, style=wx.OPEN, wildcard=self.wildcard2)
+		if dlg2.ShowModal() == wx.ID_OK:
+			valor_dialog = dlg2.GetPath()
+			self.form1.SetValue(self.valor_dialog)
 
 	def Confirmar (self, event):
 		confg1 = self.form0.GetValue()
@@ -779,15 +1005,15 @@ class janela_adicionar_iso(wx.Frame):
 		sizer_botoes.Add(botaocancelar, 0, wx.ALIGN_CENTER|wx.ALL|wx.EXPAND,5)
 
 		sizer = wx.GridBagSizer(10, 10)
-		sizer.Add(text0, (1, 1), (1,1), wx.ALIGN_RIGHT, 2)
+		sizer.Add(text0, (1, 1), (1,1), wx.ALIGN_RIGHT|wx.ALIGN_CENTER_VERTICAL, 2)
 		sizer.Add(self.form0, (1, 2), (1,1), wx.ALL|wx.EXPAND, 2)
-		sizer.Add(text1, (2, 1), (1,1), wx.ALIGN_RIGHT, 2)
+		sizer.Add(text1, (2, 1), (1,1), wx.ALIGN_RIGHT|wx.ALIGN_CENTER_VERTICAL, 2)
 		sizer.Add(self.form1, (2, 2), (1,1), wx.ALL|wx.EXPAND, 2)
-		sizer.Add(text2, (3, 1), (1,1), wx.ALIGN_RIGHT, 2)
+		sizer.Add(text2, (3, 1), (1,1), wx.ALIGN_RIGHT|wx.ALIGN_CENTER_VERTICAL, 2)
 		sizer.Add(self.form2, (3, 2), (1,1), wx.ALL|wx.EXPAND, 2)
 		sizer.Add (self.radius1, (1,3),(3,2), wx.ALL|wx.EXPAND, 2)
 		sizer.Add(linha_horizontal, (4, 0), (1,7), wx.ALL|wx.EXPAND|wx.ALIGN_CENTER, 4)
-		sizer.Add(text3, (5, 0), (2,7), wx.ALIGN_CENTER| wx.EXPAND, 2)
+		sizer.Add(text3, (5, 0), (2,7), wx.ALIGN_CENTER|wx.ALIGN_CENTER_VERTICAL, 2)
 		sizer.Add(sizer_botoes, (7,0), (2,7), wx.ALL|wx.ALIGN_CENTER|wx.EXPAND, 10)
 
 		sizer.AddGrowableRow(5)
@@ -898,6 +1124,7 @@ class ProgressDialog(wx.Dialog):
 		wx.Dialog.__init__(self, parent, title=title, style=wx.CAPTION)
 		self.count = 0
 		self.progresso=0
+		self.acabouse = False
 
 		self.timer = wx.Timer(self)
 		self.Bind(wx.EVT_TIMER, self.on_timer, self.timer)
@@ -980,6 +1207,7 @@ class ProgressDialog(wx.Dialog):
 						except ValueError:
 							break
 						if not self.tam > 0:
+							self.acabouse = True
 							break
 
 	def CopiarParaUl(self, endereco_do_jogo, codigo_do_jogo, nome_do_jogo, destino='', tipo_origem='', BUFFER = 1024, tamanho_maximo_fatia = 1073741824):
@@ -991,7 +1219,18 @@ class ProgressDialog(wx.Dialog):
 				conteudo_ulcfg=jklq.read()
 			self.jogosul_hex = conteudo_ulcfg.encode('hex')
 
-		hex_jogo = self.copiar_ul.criar_nome_ul(codigo_do_jogo, nome_do_jogo).encode('hex')
+		if tipo_origem=="ul.cfg":
+			crcorigem = pycrc32.crc32(nome_do_jogo)
+			dfg=os.path.join(os.path.dirname(endereco_do_jogo),'ul.%08X.*'%crcorigem)
+			partes = glob.glob(dfg)
+			quant_de_partes = len(partes)
+		else:
+			starsfileklk = os.stat(endereco_do_jogo)
+			tmldkopo = starsfileklk.st_size
+			quant_de_partes = int(tmldkopo/tamanho_maximo_fatia+1)
+
+
+		hex_jogo = self.copiar_ul.criar_nome_ul(codigo_do_jogo, nome_do_jogo, 'DVD', quant_de_partes).encode('hex')
 		novo_hex = hex_jogo
 		cont = 0
 		novo_nome = nome_do_jogo
@@ -1005,7 +1244,7 @@ class ProgressDialog(wx.Dialog):
 			cont+=1
 			str_cont = '%02d' %cont
 			novo_nome = '%s %s' %(nome_do_jogo, str_cont)
-			hex_jogo = self.copiar_ul.criar_nome_ul(codigo_do_jogo, novo_nome).encode('hex')
+			hex_jogo = self.copiar_ul.criar_nome_ul(codigo_do_jogo, nome_do_jogo, 'DVD', quant_de_partes).encode('hex')
 
 		self.jogosul_hex = '%s%s'%(self.jogosul_hex, hex_jogo)
 
@@ -1045,12 +1284,14 @@ class ProgressDialog(wx.Dialog):
 								break
 							if not self.tam > 0:
 								break
+							logger.debug('----------\nTotal: %s\nGravados: %s\nFaltando: %s\nProgresso: %s\n' %(tamanho_total_local, gravados, self.tam, self.progresso))
 		else:
 			gravados=0
+			grav_xuxu = 0
 			tamanho_total_local = 0
 			starsfile = os.stat(endereco_do_jogo)
 			tamanhosss = starsfile.st_size
-			tamanho_total_local +=tamanhosss
+			tamanho_total_local =tamanhosss
 			self.tam = tamanho_total_local			
 			
 			self.tamanho_maximo_fatia  = tamanho_maximo_fatia 
@@ -1073,22 +1314,28 @@ class ProgressDialog(wx.Dialog):
 							self.arquivo_alvo.write(datax)
 							self.tam -=BUFFER
 							gravados += BUFFER
-							self.progresso = int((float(gravados)/float(tamanho_total_local))*100)
+							grav_xuxu+= BUFFER
+							self.progresso = int((float(grav_xuxu)/float(tamanho_total_local))*100)
 							self.gauge.SetValue(self.progresso)
 							wx.Yield()
 						else:
 							fim = True
 							break
+						logger.debug('----------\nTotal: %s\nGravados: %s\nFaltando: %s\nProgresso: %s\n' %(tamanho_total_local, gravados, self.tam, self.progresso))	
 					fatias+=1
 					if datax:
 						pass
 					else:
-						break		
+						logger.info('copia concluida')
+						break
+							
 		with open(os.path.join(destino, 'ul.cfg'), 'w') as ulaberto:
 			dadoshjxks = self.jogosul_hex.decode('hex')
 			ulaberto.write(dadoshjxks)
+		self.acabouse = True
+
 	def on_timer(self, event):
-	  	if self.gauge.GetValue() == 100:
+	  	if self.acabouse == True:
 	  		self.timer.Stop()
 	  		self.Destroy()
 
@@ -1098,12 +1345,20 @@ class ProgressDialog(wx.Dialog):
 		else:
 			self.tam = -1
 			time.sleep(2)
-			self.Destroy()
 			self.arquivo_alvo.close()
 			time.sleep(2)
 			os.remove(self.arquivo_em_uso)
+			self.Destroy()
 
 if __name__ == '__main__':
+
+	class meu_programa2(wx.App):
+		def OnInit(self):
+			self.title = "PhanterPS2"
+			self.frame = frame_adicionar_multiplos(self.title, [],(-1,-1), (800,600))
+			self.frame.Show()
+			self.SetTopWindow(self.frame)
+			return True
 
 	y = meu_programa()
 	y.MainLoop()
