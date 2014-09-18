@@ -8,6 +8,7 @@ import string
 #from ctypes import windll
 import glob
 from PIL import Image
+from itertools import combinations
 
 logging.basicConfig(level=logging.ERROR)
 logger = logging.getLogger(__name__)
@@ -18,7 +19,8 @@ procura_cod_e_nome = re.compile(r'([a-zA-Z]{4}_[0-9]{3}\.[0-9]{2}\..*\.[iI][sS][
 procura_nome_e_cod_no_ul = re.compile(r'([ a-zA-Z0-9]*.*ul\.[ a-zA-Z0-9]{4}_[0-9]{3}\.[0-9]{2})')
 procura_apenas_cod = re.compile(r'^/([a-zA-Z]{4}_[0-9]{3}\.[0-9]{2})')
 procura_apenas_cod2 = re.compile(r'^([a-zA-Z]{4}_[0-9]{3}\.[0-9]{2})')
-procura_coverart = re.compile(r'(.*_COV\.[jJpP][pPnN][gG])$')
+procura_apenas_cod3 = re.compile(r'([a-zA-Z]{4}_[0-9]{3}\.[0-9]{2})')
+procura_coverart = re.compile(r'(.*_COV\.[pP][Nn][Gg])|(.*_COV\.[Jj][Pp][Gg])$')
 
 class configuracoes():
 	def __init__ (self, nome_do_arquivo='phanterps2.cfg'):
@@ -112,22 +114,99 @@ class verifica_jogo():
 
 	def procura_cod_in_iso(self, endereco):
 		logger.debug(u'Iniciando Funcao procura_cod_in_iso: procurando código em %s' %endereco)
-		
+		self.codigo_encontrado=False
+
 		try:
 			x = iso9660.ISO9660(endereco)
+			systemcnfx = x.get_file('/SYSTEM.CNF')
+			systemcnf = procura_apenas_cod3.findall(systemcnfx)[0]
+			self.codigo_encontrado = systemcnf
 		except:
 			x=False
+			print endereco
 			print "Erro na checagem"
-		self.codigo_encontrado=False
-		if x:
-			for y in x.tree():
-				if procura_apenas_cod.match(y):
-					p = procura_apenas_cod.findall(y)
-					self.codigo_encontrado = p[0]
-					logger.debug(u'Código encontrado: %s' %self.codigo_encontrado)
-				else:
-					logger.debug('código não encontrado, retornando False')
-		logger.debug(u'resultado da procura do código: %s' %self.codigo_encontrado)
+
+
+class manipula_cfg_jogo():
+	def __init__ (self, endereco_cfg, lista = [1, 2 , 4, 8, 16, 32, 64, 128]):
+		self.endereco_cfg = endereco_cfg
+
+		if os.path.exists(endereco_cfg):
+			self.endereco_cfg = endereco_cfg
+			self.dicionario_cfg={}
+			with open(endereco_cfg, 'r') as config:
+				conteudo = config.readlines()
+				for x in conteudo:
+					partido = x.split('=')
+					try:
+						par = partido[1].split('\n')[0]
+					except:
+						par = partido[1]
+
+					self.dicionario_cfg[partido[0]] = par
+				print self.dicionario_cfg
+		else:
+			with open(endereco_cfg, 'w'):
+				pass
+			self.dicionario_cfg={}
+
+		self.dicionario_compatibilidade = {}
+		quant = len(lista)
+		y=0
+		for x in range(quant):
+			y+=1
+			z = combinations(lista, y)
+			for i in z:
+				soma = 0
+				for s in i:
+					soma+=s
+				self.dicionario_compatibilidade[soma] = i
+		self.dicionario_compatibilidade
+
+	def leitor_cfg(self, chave):
+		try:
+			resultado = self.dicionario_cfg[chave]
+			if resultado == '\n' or resultado =='':
+				resultado=''
+			else:
+				try:
+					resultado = resultado.split('\n')[0]
+				except:
+					resultado = resultado
+		except KeyError:
+			resultado = ''
+		return resultado
+
+	def leitor_compatibilidade(self, chave):
+		print chave
+		try:
+			resultado = self.dicionario_compatibilidade[chave]
+		except KeyError:
+			print 'erro'
+			resultado = ''
+			print resultado
+
+		return resultado
+
+	def mudar_dict_cfg(self, chave, resultado):
+		self.dicionario_cfg[chave] = resultado
+
+	def gravar_em_arquivo(self):
+		texto = ''
+		ordem_gravacao_comp = ['$VMC_1','$VMC_0','$Compatibility','$DNAS','$CallbackTimer','$AltStartup']
+		ordem_gravacao_info = ['Title','Region','Genre','Description','Players','Scan','Esrb','Aspect','Rating','Compatibility','Developer','Release']
+		for x in ordem_gravacao_comp:
+			y = self.leitor_cfg(x)
+			if not y == '':
+				texto += u'%s=%s\n' %(x, y)
+
+		for x in ordem_gravacao_info:
+			y = self.leitor_cfg(x)
+			if not y == '':
+				texto += u'%s=%s\n' %(x, y)
+		#print texto
+		with open(self.endereco_cfg, 'w') as aberto:
+			aberto.write(texto)
 
 class imagens_jogos():
 	def __init__ (self, pasta_das_imagens):
@@ -184,6 +263,7 @@ class lista_de_jogos():
 		logger.info('verificando se %s existe' %(os.path.join(pasta_de_jogos, 'ul.cfg')))
 		if os.path.exists(os.path.join(pasta_de_jogos, 'ul.cfg')):
 			lista_parcial = self.extrai_ul(os.path.join(pasta_de_jogos, 'ul.cfg'))
+
 			self.lista_ul = lista_parcial[0]
 			self.tamanho_total = lista_parcial[1]
 			self.quant_de_jogos=len(self.lista_ul)
@@ -203,7 +283,7 @@ class lista_de_jogos():
 					self.quant_de_jogos+=1
 					s = os.stat(os.path.join(pasta_de_jogos, 'DVD', u'%s.%s.iso' %(x[:11], x[12:-4])))
 					tamanho = s.st_size
-					self.lista_DVD.append([os.path.join(pasta_de_jogos, 'DVD', '%s.%s.iso' %(x[:11], x[12:-4])), x[:11], x[12:-4], tamanho])
+					self.lista_DVD.append([os.path.join(pasta_de_jogos, 'DVD', '%s.%s.iso' %(x[:11], x[12:-4])), x[:11], x[12:-4], tamanho, '1', '14'])
 					self.tamanho_total+=tamanho
 			logger.info('Adicionando jogos da pasta DVD, encontrado(s) %s jogos' %(len(self.lista_DVD)))
 		else:
@@ -217,7 +297,7 @@ class lista_de_jogos():
 					self.quant_de_jogos+=1
 					t = os.stat(os.path.join(pasta_de_jogos, 'CD', '%s.%s.iso' %(x[:11], x[12:-4])))
 					tamanho = t.st_size
-					self.lista_CD.append([os.path.join(pasta_de_jogos, 'CD', '%s.%s.iso' %(x[:11], x[12:-4])), x[:11], x[12:-4], tamanho])
+					self.lista_CD.append([os.path.join(pasta_de_jogos, 'CD', '%s.%s.iso' %(x[:11], x[12:-4])), x[:11], x[12:-4], tamanho, '1', '12'])
 					self.tamanho_total+=tamanho
 			logger.info('Adicionando jogos da pasta CD, encontrado(s) %s jogos' %(len(self.lista_CD)))
 		else:
@@ -236,9 +316,9 @@ class manipula_ul():
 		self.extrai_ul(endereco_do_arquivo)
 		return self.jogos_e_info_ul
 				
-	def criar_nome_ul (self, codigo_do_jogo, nome_do_jogo, tipo = 'DVD', quant_de_partes = 0):
+	def criar_nome_ul (self, codigo_do_jogo, nome_do_jogo, midia = 'DVD', quant_de_partes = 5):
 		cod = 'ul.%s' %(codigo_do_jogo)
-		if tipo == 'CD':
+		if midia == 'CD':
 			tipo_id = 12
 		else:
 			tipo_id = 14
@@ -274,9 +354,7 @@ class manipula_ul():
 			pedaco_nome_jogo = conteudo_hex[inicont:inicont+64]
 			pedaco_codigo =  conteudo_hex[inicont+70:inicont+92]
 			pedaco_quant_partes = conteudo_hex[inicont+95:inicont+96]
-			print pedaco_quant_partes
 			pedaco_tipo = conteudo_hex[inicont+96:inicont+98]
-			print pedaco_tipo
 			procs = pedaco_nome_jogo.find('000')
 			pedaco_so_o_nome = conteudo_hex[inicont:inicont+procs]
 			pedaco_codigo_nrm = pedaco_codigo.decode('hex')
@@ -308,7 +386,7 @@ class manipula_ul():
 		with open(destino, "wb") as arquico_alvo:
 			tamanho_total=0
 			for f in self.zarquivos:
-				print f
+
 				vv = os.stat(f)
 
 				tamanho_parcial = vv.st_size
@@ -437,14 +515,14 @@ class manipula_ul():
 			convertido_hex = lido.encode('hex')
 			nome_do_jogo_hex = nome_do_jogo.encode('hex')
 			posicao_var = convertido_hex.find(nome_do_jogo_hex)
-			print posicao_var
+
 			pedaco = convertido_hex[posicao_var:posicao_var+128]
-			print pedaco.decode('hex')
+
 
 			mudado_hex = convertido_hex.replace(pedaco, '')
 
 			mudado = mudado_hex.decode('hex')
-			print mudado
+
 
 		aberto.close()
 		with open(os.path.join(endereco_pasta, 'ul.cfg'), 'w') as escrever:
@@ -589,5 +667,13 @@ def muda_nome_jogo(endereco_do_jogo, novo_nome):
 
 if __name__ == '__main__':
 	pass
+
+
+
+
+
+
+
+
 
 
