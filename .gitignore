@@ -57,3 +57,11 @@ docs/_build/
 *.cfg
 *.dmp
 .gitignore
+.idea
+*.bin
+
+phanterps2.cfg
+language/sample.lng
+language/en-EN.lng
+imagem_check.cfg
+Dependências/lista de dependências.txt
