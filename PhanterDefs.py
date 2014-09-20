@@ -1,11 +1,14 @@
 # -*- coding: utf-8 -*- 
+# -*- coding: utf-8 -*-
+# Copyright (c) 2014 PhanterJR
+# https://github.com/PhanterJR
+# Licença LGPL
+
 import logging
 import os
 import re
 from contrib import iso9660
 from contrib import pycrc32
-import string
-#from ctypes import windll
 import glob
 from PIL import Image
 from itertools import combinations
@@ -137,6 +140,7 @@ class manipula_cfg_jogo():
 			with open(endereco_cfg, 'r') as config:
 				conteudo = config.readlines()
 				for x in conteudo:
+					x = x.decode('utf-8')
 					partido = x.split('=')
 					try:
 						par = partido[1].split('\n')[0]
@@ -146,7 +150,7 @@ class manipula_cfg_jogo():
 					self.dicionario_cfg[partido[0]] = par
 				print self.dicionario_cfg
 		else:
-			with open(endereco_cfg, 'w'):
+			with open(endereco_cfg, 'w') as configzsh:
 				pass
 			self.dicionario_cfg={}
 
@@ -204,7 +208,7 @@ class manipula_cfg_jogo():
 			y = self.leitor_cfg(x)
 			if not y == '':
 				texto += u'%s=%s\n' %(x, y)
-		#print texto
+		texto = texto.encode('utf-8')
 		with open(self.endereco_cfg, 'w') as aberto:
 			aberto.write(texto)
 
@@ -249,6 +253,18 @@ class imagens_jogos():
 		logger.info('localizado %s em %s' %(self.cove[1],self.cove[0]))
 		return self.cove
 
+def eh_cover_art (endereco_da_imagem):
+	if os.path.exists(endereco_da_imagem):
+		nome = os.path.basename(endereco_da_imagem)
+		if procura_coverart.match(nome):
+			print 'é imagem de cover'
+			print endereco_da_imagem
+			return True
+
+
+
+
+
 class lista_de_jogos():
 	def __init__ (self, pasta_de_jogos):
 		logger.info('Função lista_de_jogos(): Examinando pasta %s'%pasta_de_jogos)
@@ -281,7 +297,11 @@ class lista_de_jogos():
 				if procura_cod_e_nome.match(x):
 					logger.debug('Verificando o tamanho do arquivo %s' %x)
 					self.quant_de_jogos+=1
-					s = os.stat(os.path.join(pasta_de_jogos, 'DVD', u'%s.%s.iso' %(x[:11], x[12:-4])))
+					cod_kjh = x[:11]
+
+					nom_kjh = x[12:-4]
+
+					s = os.stat(os.path.join(pasta_de_jogos, 'DVD', '%s.%s.iso' %(cod_kjh, nom_kjh)))
 					tamanho = s.st_size
 					self.lista_DVD.append([os.path.join(pasta_de_jogos, 'DVD', '%s.%s.iso' %(x[:11], x[12:-4])), x[:11], x[12:-4], tamanho, '1', '14'])
 					self.tamanho_total+=tamanho
@@ -324,7 +344,8 @@ class manipula_ul():
 			tipo_id = 14
 		codigo_hex = cod.encode('hex')
 		codigo_completo_hex = '%s000%s%s000000000800000000000000000000' %(codigo_hex, quant_de_partes, tipo_id)
-		nome_hex = nome_do_jogo.encode('hex')
+
+		nome_hex = nome_do_jogo.encode('latin-1').encode('hex')
 		numnome = len(nome_hex)
 		if numnome > 60:
 			nome_hex = nome_hex[0:60]
@@ -343,7 +364,6 @@ class manipula_ul():
 		with open(endereco_do_arquivo, 'r') as arquivo_lido:
 			conteudo = arquivo_lido.read()
 		endereco_base = os.path.dirname(endereco_do_arquivo)
-
 		conteudo_hex = conteudo.encode('hex')
 
 		quantidade_de_jogos_no_ul = len(conteudo_hex)/128
@@ -357,8 +377,12 @@ class manipula_ul():
 			pedaco_tipo = conteudo_hex[inicont+96:inicont+98]
 			procs = pedaco_nome_jogo.find('000')
 			pedaco_so_o_nome = conteudo_hex[inicont:inicont+procs]
+			if len(pedaco_so_o_nome)%2==1:
+				pedaco_so_o_nome = "%s0"%pedaco_so_o_nome
 			pedaco_codigo_nrm = pedaco_codigo.decode('hex')
+
 			pedaco_so_o_nome_nrm = pedaco_so_o_nome.decode('hex')
+
 			inicont +=128
 			nome_base_pedaco = "ul.%08X.%s" %(pycrc32.crc32(pedaco_so_o_nome_nrm), pedaco_codigo_nrm)
 			pedacos_encontrados = glob.glob(os.path.join(endereco_base, "%s.*"%nome_base_pedaco))
@@ -373,9 +397,8 @@ class manipula_ul():
 
 		return self.jogos_e_info_ul
 
-
 	def juntar_arquivos (self, arquivos, destino='', nome='NOVO_NOME.iso'):
-		if not arquivos == list():
+		if not arquivos == list:
 			self.zarquivos = [arquivos]
 		else:
 			self.zarquivos = arquivos
@@ -404,7 +427,6 @@ class manipula_ul():
 						arquico_alvo.write(y)
 						if not tam > 0:
 							break
-
 
 	def cortar_aquivos(self, endereco_do_jogo, codigo_do_jogo, nome_do_jogo, destino='', BUFFER = 1024, tamanho_maximo_fatia = 1073741824):
 
@@ -437,6 +459,7 @@ class manipula_ul():
 					pass
 				else:
 					break
+
 	def renomear_jogo_ul (self, pasta_do_arquivo, antigo_nome, novo_nome):
 		jog = self.extrai_ul(os.path.join(pasta_do_arquivo,'ul.cfg'))
 		
@@ -513,11 +536,10 @@ class manipula_ul():
 		with open(os.path.join(endereco_pasta, 'ul.cfg'), 'r') as aberto:
 			lido =  aberto.read()
 			convertido_hex = lido.encode('hex')
-			nome_do_jogo_hex = nome_do_jogo.encode('hex')
+			nome_do_jogo_hex = nome_do_jogo.encode('latin-1').encode('hex')
 			posicao_var = convertido_hex.find(nome_do_jogo_hex)
 
 			pedaco = convertido_hex[posicao_var:posicao_var+128]
-
 
 			mudado_hex = convertido_hex.replace(pedaco, '')
 
@@ -527,7 +549,6 @@ class manipula_ul():
 		aberto.close()
 		with open(os.path.join(endereco_pasta, 'ul.cfg'), 'w') as escrever:
 			escrever.write(mudado)
-
 
 def convert_tamanho(valor=''):
 	logger.info('Função convert_tamanho: Convertendo %s' %(valor))
@@ -630,7 +651,7 @@ def Tradutor (palavra, dicionario = '', isunicode=True):
 
 def retirar_exitf_imagem(lista_de_imagens):
 	arquivos = glob.glob(os.path.join('D:\\','PS2','ART','*.png'))
-	if not lista_de_imagens == list():
+	if not lista_de_imagens == list:
 		lista = []
 		lista.append(lista_de_imagens)
 		lista_de_imagens = lista 
