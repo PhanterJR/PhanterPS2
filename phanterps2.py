@@ -2,61 +2,63 @@
 # Copyright (c) 2014 PhanterJR
 # https://github.com/PhanterJR
 # Licença LGPL
-
 import wx
 import wx.html
 import os
 import logging
-from phanterdefs import Tradutor, configuracoes, imagens_jogos, lista_de_jogos, convert_tamanho, eh_cover_art,\
-    verifica_jogo, manipula_ul, retirar_exitf_imagem, muda_nome_jogo, manipula_cfg_jogo
+from phanterdefs import Tradutor, Configuracoes, imagens_jogos, lista_de_jogos, convert_tamanho, eh_cover_art,\
+    VerificaJogo, manipula_ul, retirar_exitf_imagem, muda_nome_jogo, ManipulaCfgJogo
 import glob
 from contrib import pycrc32
 import time
+import hashlib
 
 logging.basicConfig(level=logging.ERROR)
 logger = logging.getLogger(__name__)
-
 corrente = os.getcwd()
-conf_prog = configuracoes()
-imagem_check = configuracoes('imagem_check.cfg')
+imagem_check = Configuracoes('imagem_check.cfg')
 memoria = {}
 memoria['tamanho_total_dos_jogos'] = 0
 memoria['jogos_selecionados'] = 0
 memoria['progresso'] = 0
 memoria['selecionado_para_copiar'] = {}
 memoria['selecionados_multiplos'] = {}
-dicionario = conf_prog.leitor_configuracao('dicionario')
+#conf_dicionario = Configuracoes()
+#dicionario = conf_dicionario.leitor_configuracao('dicionario')
 
 
-class meu_programa(wx.App):
+class MeuPrograma(wx.App):
+
     def OnInit(self):
+
         bmp = wx.Image(os.path.join(corrente, 'imagens', 'splash.jpg'), wx.BITMAP_TYPE_ANY).ConvertToBitmap()
         wx.SplashScreen(bmp, wx.CENTER_ON_SCREEN | wx.SPLASH_TIMEOUT, 3000, None,
                         style=wx.NO_BORDER | wx.SIMPLE_BORDER | wx.STAY_ON_TOP)
         wx.Yield()
-        #favicon = wx.Icon(os.path.join(corrente, 'imagens', 'favicon64.png'), wx.BITMAP_TYPE_PNG)
-
-         
         self.title = "PhanterPS2"
-        self.frame = meu_frame(self.title, (-1, -1), (800, 600))
-        icos = wx.IconBundle()
-        icos.AddIconFromFile (os.path.join(corrente, 'imagens', 'favicon256.png'), wx.BITMAP_TYPE_PNG)
-        icos.AddIconFromFile (os.path.join(corrente, 'imagens', 'favicon128.png'), wx.BITMAP_TYPE_PNG)
-        icos.AddIconFromFile (os.path.join(corrente, 'imagens', 'favicon64.png'), wx.BITMAP_TYPE_PNG)
-        icos.AddIconFromFile (os.path.join(corrente, 'imagens', 'favicon32.png'), wx.BITMAP_TYPE_PNG)
-        icos.AddIconFromFile (os.path.join(corrente, 'imagens', 'favicon16.png'), wx.BITMAP_TYPE_PNG)
-        self.frame.SetIcons(icos)
-        #self.frame.SetIcon(favicon)
+        self.frame = FramePrincipal(self.title, (-1, -1), (1024, 728))
+        icone = wx.Icon(os.path.join(corrente, 'imagens', 'icon.ico'), wx.BITMAP_TYPE_ICO)
+        self.frame.SetIcon(icone)
         self.frame.Show()
         self.SetTopWindow(self.frame)
         return True
 
 
-class meu_frame(wx.Frame):
+class FramePrincipal(wx.Frame):
     def __init__(self, title, pos, size):
         wx.Frame.__init__(self, None, wx.ID_ANY, title, pos, size)
+        if os.path.exists(os.path.join(corrente, 'language')):
+            try:
+                os.makedirs(os.path.join(corrente, 'language'))
+                with (os.path.join(corrente, 'language', 'sample.lng'), 'w') as ricos:
+                    ricos.write('') 
+            except:
+                pass
+
         self.lista_de_selecionados = []
-        self.pastadefault = conf_prog.pasta_padrao_jogos
+        conf_prog = Configuracoes()
+        dicionario = conf_prog.leitor_configuracao('DICIONARIO')
+        self.pastadefault = conf_prog.leitor_configuracao('PADRAO')
         self.tamanho_vindo_do_filho = 0
         zz = lista_de_jogos(self.pastadefault)
         self.jogos_e_info = zz.jogos_e_info
@@ -83,6 +85,7 @@ class meu_frame(wx.Frame):
 
         barra_de_status = self.CreateStatusBar()
         self.SetStatusText(Tradutor("Bem vindo ao PhanterPS2", dicionario))
+
         barra_de_ferramentas = self.CreateToolBar()
         barra_de_ferramentas.SetBackgroundColour('#BEBEBE')
 
@@ -158,18 +161,30 @@ class meu_frame(wx.Frame):
         self.Bind(wx.EVT_CHECKBOX, self.dofilho2)  #No atualizar deve ser comentado
         self.Bind(wx.EVT_BUTTON, self.dofilho)  #No atualizar deve ser comentado
         self.Atualizar_refresh()
-
-    def Atualizar_refresh (self, refresh = False):
+        arquivo_de_senha = os.path.join(corrente, 'pwd')
+        wx.Yield()
+        if not os.path.exists(arquivo_de_senha):
+            login = LoginDialog(self)
+            login.ShowModal()
+    def Atualizar_refresh(self, refresh = False):
         memoria['selecionado_para_copiar'] = {}
+        conf_prog = Configuracoes()
+        dicionario = conf_prog.leitor_configuracao('DICIONARIO')
         if refresh == True:
-            self.painel_principal.Destroy()
+            #bmp = wx.Image(os.path.join(corrente, 'imagens', 'processando.jpg'), wx.BITMAP_TYPE_ANY).ConvertToBitmap()
+            #splash_processando = wx.lib.splashscreen(bmp, wx.CENTER_ON_SCREEN | wx.SPLASH_TIMEOUT, 12000, None,
+            #                       style=wx.NO_BORDER | wx.SIMPLE_BORDER )
+            meusplash = MeuSplash(self,ID=wx.ID_ANY)
+            wx.Yield()
+            meusplash.Show(True)
 
+            self.pastadefault = conf_prog.leitor_configuracao('PADRAO')
+            self.painel_principal.Destroy()
         self.painel_principal = wx.Panel(self, wx.ID_ANY)  #Painel Pinricpal
-        #self.painel_principal.Hide()
 
         sizer_panel_titulo = wx.GridBagSizer(0, 0)  #sizers
         sizer_panel = wx.GridBagSizer(0, 100)
-
+        self.arquivoiso = ""
         if refresh == True:
             self.SendSizeEvent()
 
@@ -189,13 +204,22 @@ class meu_frame(wx.Frame):
         self.painel_scroll.Hide()
         sizer_jogos = wx.GridSizer(cols=2, hgap=0, vgap=0)
         self.imagens_jogos = imagens_jogos(os.path.join(self.pastadefault, 'ART'))
-        logger.debug(self.imagens_jogos)
         wx.Yield()
         meuid = 0
+        if refresh == True:
+            #bmp2 = wx.Image(os.path.join(corrente, 'imagens', 'splash.jpg'), wx.BITMAP_TYPE_ANY).ConvertToBitmap()
+            #splash_processando.SetBitmap(bmp2)
+            pass
+        quantogauge = len(self.listjogos)
         for x in self.listjogos:
+
             meuid += 1
-            logger.debug('Construindo lista de jogos: retorno da função lista de jogos %s' % x)
-            sizer_jogos.Add(painel_de_jogos(
+
+
+            if refresh == True:
+                valorgauge = int(float(meuid)/quantogauge*100)
+                meusplash.gauge.SetValue(valorgauge)
+            sizer_jogos.Add(PainelJogos(
                 self.painel_scroll, wx.ID_NEW, (0, 0), (-1, 110),
                 arquivo_do_jogo=x[0], codigo_do_jogo=x[1], nome_do_jogo=x[2], tamanho_do_jogo=x[3],
                 partes=x[4], tipo_midia=x[5], lista_cover_art=self.imagens_jogos, Meu_ID=meuid),
@@ -310,10 +334,12 @@ class meu_frame(wx.Frame):
         #FIM Caixa de ações
         linha_vertical = wx.StaticLine(self.painel_info_e_acao, id=wx.ID_ANY, pos=(0, 0), size=(-1, -1),
                                         style=wx.LI_VERTICAL | wx.BORDER_DOUBLE)
+
         sizer_panel_rodape = wx.GridBagSizer(0,0)
         sizer_panel_rodape.Add(self.painel_info, (0,0),(1,2), wx.ALIGN_CENTER | wx.ALL | wx.EXPAND, 5)
         sizer_panel_rodape.Add(linha_vertical, (0, 2),(1, 1),  wx.ALL | wx.EXPAND, 5)
         sizer_panel_rodape.Add(self.painel_acao, (0,3),(1,6), wx.ALIGN_CENTER | wx.ALL | wx.EXPAND, 5)
+
         sizer_panel_rodape.AddGrowableCol(1)
         sizer_panel_rodape.AddGrowableCol(3)
         sizer_panel_rodape.AddGrowableCol(4)
@@ -334,24 +360,33 @@ class meu_frame(wx.Frame):
         self.Layout()
         self.CenterOnScreen()
         self.SendSizeEvent()
+        if refresh == True:
+            meusplash.Destroy()
+            #splash_processando.Destroy()
+        
 
-    wildcard = "%s (*.iso)|*.iso" % (Tradutor('Imagem ISO', dicionario))
+
 
     def AbrirIso(self, event):
+        conf_prog = Configuracoes()
+        dicionario = conf_prog.leitor_configuracao('DICIONARIO')
+        self.wildcard = "%s (*.iso)|*.iso" % (Tradutor('Imagem ISO', dicionario))
         self.janeladlg = wx.FileDialog(self, Tradutor(u"Selecionando Imagem...", dicionario), corrente, style=wx.OPEN,
                                        wildcard=self.wildcard)
         if self.janeladlg.ShowModal() == wx.ID_OK:
             self.arquivoiso = self.janeladlg.GetPaths()
             self.janeladlg.Destroy()
             self.ReadFile(self.arquivoiso[0])
-            logger.debug(u'%s, %s, %s' % (self.resultados[0][0], self.resultados[1][0], self.resultados[2][0]))
-            self.frame = janela_adicionar_iso(self, wx.ID_ANY,
+            self.frame = FrameAdicionarIso(self, wx.ID_ANY,
                                               Tradutor(u"Adicione o nome e código do jogo", dicionario),
                                               self.resultados[0], self.resultados[1], self.resultados[2],
                                               self.resultados[3], self.listjogos)
             self.frame.Show(True)
 
     def MultiIso(self, event):
+        conf_prog = Configuracoes()
+        dicionario = conf_prog.leitor_configuracao('DICIONARIO')
+        self.wildcard = "%s (*.iso)|*.iso" % (Tradutor('Imagem ISO', dicionario))
         self.janeladlg = wx.FileDialog(self, Tradutor(u"Selecionando Imagens...", dicionario), corrente,
                                        style=wx.MULTIPLE, wildcard=self.wildcard)
         if self.janeladlg.ShowModal() == wx.ID_OK:
@@ -359,7 +394,7 @@ class meu_frame(wx.Frame):
             lis = []
             tam_tot = 0
             for d in self.arquivoiso:
-                ver = verifica_jogo(d)
+                ver = VerificaJogo(d)
                 res = ver.resultado_final
                 tam_tot += res[3]
                 uno = [res[0], res[1], res[2], res[3]]
@@ -367,29 +402,22 @@ class meu_frame(wx.Frame):
             lista_de_jogoss = [lis, tam_tot]
 
             self.janeladlg.Destroy()
-            self.frame = frame_adicionar_multiplos(self.title, lista_de_jogoss[0], lista_de_jogoss[1], (-1, -1),
-                                                   (500, 400))
+            self.frame = FrameAdicionarMultiplos(self, self.title, lista_de_jogoss[0], lista_de_jogoss[1], (-1, -1),
+                                                   (1000, 400))
             self.frame.Show(True)
 
     def Atualizar(self, event):
-        conf_prog = configuracoes()
-        self.pastadefault = conf_prog.pasta_padrao_jogos
-        logger.debug('Pasta default mudada para %s' % self.pastadefault)
+        conf_prog = Configuracoes()
+        self.pastadefault = conf_prog.leitor_configuracao('PADRAO')
 
         x = lista_de_jogos(self.pastadefault)
         self.jogos_e_info = x.jogos_e_info
         self.listjogos = self.jogos_e_info[0]
         event.Skip()
-        bmp = wx.Image(os.path.join(corrente, 'imagens', 'processando.jpg'), wx.BITMAP_TYPE_ANY).ConvertToBitmap()
-        busy = wx.SplashScreen(bmp, wx.CENTER_ON_SCREEN | wx.SPLASH_TIMEOUT, 1200, None,
-                               style=wx.NO_BORDER | wx.SIMPLE_BORDER | wx.STAY_ON_TOP)
-        wx.Yield()
         self.Atualizar_refresh(True)
-        del busy
 
     def ReadFile(self, arquivosiso):
-        logger.debug(u'Na funcao ReadFile os arquivos que serão lidos serão: %s' % (arquivosiso))
-        result = verifica_jogo(arquivosiso)
+        result = VerificaJogo(arquivosiso)
         resultados = result.resultado_final
         self.resultados = resultados
 
@@ -398,14 +426,18 @@ class meu_frame(wx.Frame):
         pass
 
     def Sobre(self, event):
-        x = sobre()
+        x = FrameSobre()
         x.Show()
 
     def Config(self, event):
-        frame = painel_configuracao(self, -1, Tradutor(u"Configurações", dicionario))
+        conf_prog = Configuracoes()
+        dicionario = conf_prog.leitor_configuracao('DICIONARIO')
+        frame = FrameConfiguracao(self, -1, Tradutor(u"Configurações", dicionario))
         frame.Show(True)
 
     def DeletarCopiar(self, event):
+        conf_prog = Configuracoes()
+        dicionario = conf_prog.leitor_configuracao('DICIONARIO')
         if self.CopiarTaAtivado == True:
             self.copiar_VMC.Enabled = True
             self.copia_padrao_iso.Enabled = True
@@ -446,14 +478,45 @@ class meu_frame(wx.Frame):
                         elif y[1] == 'VMC' and self.copiar_VMC.GetValue() == True:
                             lista_de_arquivos.append(y)
 
-            definitivo_kkk = ProgressDialog(self, Tradutor('Copiando arquivos selecionados', dicionario),lista_de_arquivos)
+            definitivo_kkk = ProgressCopia(self, Tradutor('Copiando arquivos selecionados', dicionario),lista_de_arquivos)
             definitivo_kkk.Show()
             definitivo_kkk.iniciarcopia()
         else:
-            print 'é para deletar'
-            print self.CopiarTaAtivado
+            login = LoginDialog(self, False)
+            login.ShowModal()
+            login.Destroy()
+            if login.autorizado == True:
+
+                lista_del = []
+                for xz in memoria['selecionado_para_copiar']:
+
+                    if memoria['selecionado_para_copiar'][xz] == False:
+                        lista_inix=[]
+                    else:
+                        lista_inix = memoria['selecionado_para_copiar'][xz]
+                    for yz in lista_inix:
+                        print yz[1]
+                        if yz[1] == 'ulDVD' or yz[1] == 'ulCD' or yz[1] == 'DVD' or yz[1] == 'CD':
+                            if not lista_inix ==[]:
+                                lista_del.append(yz)
+                print lista_del
+                for xw in lista_del:
+                    print 'deletando ---'
+                    if xw[1] == 'ulDVD' or xw[1] == 'ulCD':
+
+                        end_base = os.path.dirname(xw[0][0])
+                        deleta_ul = manipula_ul()
+                        novo_nome_zx = xw[5][12:]
+                        print (end_base, novo_nome_zx)
+                        deleta_ul.deletar_jogo_ul(end_base, novo_nome_zx)
+                    else:
+                        print (xw[0],)
+                        os.remove(xw[0])
+            self.Atualizar()
 
     def PastaDestino(self, event):
+        conf_prog = Configuracoes()
+        dicionario = conf_prog.leitor_configuracao('DICIONARIO')
         dlg = wx.DirDialog(self, Tradutor(u"Selecionando pasta destino...", dicionario), corrente, style=wx.OPEN)
         if dlg.ShowModal() == wx.ID_OK:
             self.CopiarTaAtivado = True
@@ -465,32 +528,28 @@ class meu_frame(wx.Frame):
             self.copiar_Capa.Enabled = True
             self.copia_cfg.Enabled = True
             self.botao_deletar_tudo.SetLabel(Tradutor('Copiar selecionados', dicionario))
+
     def Check (self, event):
         pass
+
     def dofilho(self, event):
         # widget = event.GetEventObject()
         # id_evento = widget.GetId()
-        logger.debug('Capturando evento filho')
 
-        conf_prog = configuracoes()
-        self.pastadefault = conf_prog.pasta_padrao_jogos
-        logger.debug('Pasta default mudada para %s' % self.pastadefault)
+        conf_prog = Configuracoes()
+        self.pastadefault = conf_prog.leitor_configuracao('PADRAO')
 
         x = lista_de_jogos(self.pastadefault)
         self.jogos_e_info = x.jogos_e_info
         self.listjogos = self.jogos_e_info[0]
         #event.Skip()
-        bmp = wx.Image(os.path.join(corrente, 'imagens', 'processando.jpg'), wx.BITMAP_TYPE_ANY).ConvertToBitmap()
-        busy = wx.SplashScreen(bmp, wx.CENTER_ON_SCREEN | wx.SPLASH_TIMEOUT, 1200, None,
-                               style=wx.NO_BORDER | wx.SIMPLE_BORDER | wx.STAY_ON_TOP)
-        wx.Yield()
         self.Atualizar_refresh(True)
-        del busy
 
     def dofilho2(self, event):
+        conf_prog = Configuracoes()
+        dicionario = conf_prog.leitor_configuracao('DICIONARIO')
         self.form3.SetValue(str(memoria['jogos_selecionados']))
         self.form4.SetValue(convert_tamanho(memoria['tamanho_total_dos_jogos']))
-        print self.form4.GetValue()
         if self.form4.GetValue() == '0 KB':
             self.CopiarTaAtivado = False
             self.form5.SetValue('')
@@ -510,7 +569,69 @@ class meu_frame(wx.Frame):
             self.botao_copiar_selecionados.Enabled = True
 
 
-class painel_de_jogos(wx.Panel):
+class MeuSplash (wx.Frame):
+    def __init__(self, parent, ID=wx.ID_ANY , title="", style=wx.NO_BORDER | wx.SIMPLE_BORDER,
+                    duration=10500, bitmapfile=os.path.join(corrente, 'imagens', 'processando.jpg'), callback = None):
+        bmp = wx.Image(bitmapfile, wx.BITMAP_TYPE_ANY).ConvertToBitmap()
+        self.bitmap = bmp
+
+        size = (bmp.GetWidth(), bmp.GetHeight()+50)
+        width = wx.SystemSettings_GetMetric(wx.SYS_SCREEN_X)
+        height = wx.SystemSettings_GetMetric(wx.SYS_SCREEN_Y)
+        pos = ((width-size[0])/2, (height-size[1])/2)
+        if pos[0] < 0:
+            size = (wx.SystemSettings_GetSystemMetric(wx.SYS_SCREEN_X), size[1])
+        if pos[1] < 0:
+            size = (size[0], wx.SystemSettings_GetSystemMetric(wx.SYS_SCREEN_Y))
+
+        wx.Frame.__init__(self, parent, ID, title, pos, size, style)
+        self.Bind(wx.EVT_LEFT_DOWN, self.OnMouseClick)
+        self.Bind(wx.EVT_CLOSE, self.OnCloseWindow)
+        self.Bind(wx.EVT_PAINT, self.OnPaint)
+        self.Bind(wx.EVT_ERASE_BACKGROUND, self.OnEraseBG)
+
+
+        self.Show(True)
+
+
+        class SplashTimer(wx.Timer):
+            def __init__(self, targetFunction):
+                self.Notify = targetFunction
+                wx.Timer.__init__(self)
+
+        if callback is None:
+            callback = self.OnSplashExitDefault
+
+        self.timer = SplashTimer(callback)
+        self.timer.Start(duration, 1) # one-shot only
+
+    def OnPaint(self, event):
+        sizer = wx.GridBagSizer(0,0)
+        painel = wx.Panel(self, wx.ID_ANY, (0,0), (300,200))
+        painel_bmp = wx.StaticBitmap(painel, wx.ID_ANY, self.bitmap, (0, 0))
+
+        self.gauge = wx.Gauge(painel, range=100, size=(290, 20))
+        sizer.Add(painel_bmp, (0,0), (1,1), wx.ALL | wx.EXPAND, 0)
+        sizer.Add(self.gauge, (1,0), (1,1), wx.ALL| wx.EXPAND,5)
+        painel.SetSizerAndFit(sizer)
+        #dc = wx.PaintDC(self)
+        #dc.DrawBitmap(self.bitmap, 0,0, False)
+
+    def OnEraseBG(self, event):
+        pass
+
+    def OnSplashExitDefault(self, event=None):
+        self.Close(True)
+
+    def OnCloseWindow(self, event=None):
+        self.Show(False)
+        self.timer.Stop()
+        del self.timer
+        self.Destroy()
+    def OnMouseClick(self, event):
+        self.timer.Notify()
+
+class PainelJogos(wx.Panel):
     def __init__(self, parent, ID, pos, size, arquivo_do_jogo, codigo_do_jogo, nome_do_jogo, tamanho_do_jogo, partes,
                  tipo_midia, lista_cover_art, Meu_ID):
         wx.Panel.__init__(self, parent, wx.ID_ANY, pos, size, wx.EXPAND)
@@ -521,7 +642,11 @@ class painel_de_jogos(wx.Panel):
         self.midia_tipo = 'CD' if tipo_midia == '12'  else 'DVD'
         self.parent = parent
         self.tamanho_total = 0
-        self.pastadefault = conf_prog.pasta_padrao_jogos
+        conf_prog = Configuracoes()
+        dicionario = conf_prog.leitor_configuracao('DICIONARIO')
+        self.pastadefault = conf_prog.leitor_configuracao('PADRAO')
+
+
         self.configuracao_do_jogo = os.path.join(self.pastadefault, 'CFG', '%s.cfg' % (codigo_do_jogo))
         self.tamanho_do_jogo = tamanho_do_jogo
         self.cover_art = lista_cover_art.localiza_cover_art(codigo_do_jogo)
@@ -623,7 +748,9 @@ class painel_de_jogos(wx.Panel):
         self.Layout()
 
     def Renomear(self, event):
-
+        conf_prog = Configuracoes()
+        dicionario = conf_prog.leitor_configuracao('DICIONARIO')
+        self.pastadefault = conf_prog.leitor_configuracao('PADRAO')
         if self.form1.Enabled == False:
             self.form1.Enabled = True
             self.botao_renomear.SetLabel("OK")
@@ -633,7 +760,7 @@ class painel_de_jogos(wx.Panel):
 
         elif self.form1.Enabled == True:
             if self.acao_nomedojogoatual == self.form1.GetValue():
-                print 'Não mudou'
+                pass
             elif os.path.basename(self.arquivo_do_jogo) == 'ul.cfg':
                 end_base = os.path.dirname(self.acao_enderecodojogo)
                 muda_ul = manipula_ul()
@@ -685,6 +812,9 @@ class painel_de_jogos(wx.Panel):
             self.botao_renomear.SetLabel("Renomear")
 
     def Deletar(self, event):
+        conf_prog = Configuracoes()
+        dicionario = conf_prog.leitor_configuracao('DICIONARIO')
+        self.pastadefault = conf_prog.leitor_configuracao('PADRAO')
         msgbox = wx.MessageDialog(self, 'Deletando', Tradutor('Deletando jogo', dicionario),
                                   wx.YES_NO | wx.ICON_INFORMATION)
         resultado = msgbox.ShowModal()
@@ -725,15 +855,20 @@ class painel_de_jogos(wx.Panel):
             msgbox.Destroy()
 
     def ConfiguracaoJogo(self, event):
+        conf_prog = Configuracoes()
+        dicionario = conf_prog.leitor_configuracao('DICIONARIO')
+        self.pastadefault = conf_prog.leitor_configuracao('PADRAO')
         nome_do_jogo = self.form1.GetValue()
         codigo_do_jogo = self.form0.GetValue()
         endereco_config = self.configuracao_do_jogo
 
-        self.obj_config = painel_config_jogo(self, wx.ID_ANY, Tradutor(u'Configuração do Jogo', dicionario),
+        self.obj_config = FrameConfiguracaoJogo(self, wx.ID_ANY, Tradutor(u'Configuração do Jogo', dicionario),
                                              endereco_arquivo_cfg=endereco_config, nome_do_jogo=nome_do_jogo)
         self.obj_config.Show()
 
     def CopiarPara(self, event):
+        conf_prog = Configuracoes()
+        dicionario = conf_prog.leitor_configuracao('DICIONARIO')
         nome_do_jogo = self.form1.GetValue()
         comparador = os.path.basename(self.form2.GetValue())
         if comparador == 'ul.cfg':
@@ -741,20 +876,22 @@ class painel_de_jogos(wx.Panel):
         else:
             tipo = self.formtipo.GetValue()
 
-        self.objcopiar = Copiar_para(self, wx.ID_ANY, Tradutor('Copiar para...', dicionario), self.form2.GetValue(),
+        self.objcopiar = CopiarPara(self, wx.ID_ANY, Tradutor('Copiar para...', dicionario), self.form2.GetValue(),
                                      self.form0.GetValue(), nome_do_jogo, tamanho_do_jogo=self.tamanho_do_jogo,
                                      imagem=self.endereco_da_imagem, cfg=self.configuracao_do_jogo, tipo_origem=tipo,
                                      tipo_destino='')
         self.objcopiar.Show()
 
     def MudarImagem(self, event):
+        conf_prog = Configuracoes()
+        dicionario = conf_prog.leitor_configuracao('DICIONARIO')
+        self.pastadefault = conf_prog.leitor_configuracao('PADRAO')
         wildcardx = "%s (*.jpg)|*.jpg|%s (*.png)|*.png" % (
         Tradutor('Imagem jpg', dicionario), Tradutor('Imagem png', dicionario))
         dlg = wx.FileDialog(self, Tradutor(u"Selecionando Imagem...", dicionario),
                             os.path.dirname(self.endereco_da_imagem), style=wx.OPEN, wildcard=wildcardx)
         if dlg.ShowModal() == wx.ID_OK:
             self.arquivoimg = dlg.GetPath()
-            logger.info('%s' % self.arquivoimg)
             dlg.Destroy()
             if not self.endereco_da_imagem == self.arquivoimg[0]:
                 retirar_exitf_imagem(self.arquivoimg)
@@ -777,6 +914,7 @@ class painel_de_jogos(wx.Panel):
             dlg.Destroy()
 
     def Selecionado(self, event):
+
         valor_do_radio = self.radio.GetValue()
         atual = memoria['tamanho_total_dos_jogos']
         selecionados = memoria['jogos_selecionados']
@@ -785,7 +923,6 @@ class painel_de_jogos(wx.Panel):
             origem = self.form2.GetValue()
             nome = '%s.%s' % (self.codigo_do_jogo, self.nome_do_jogo)
             if os.path.basename(origem) == 'ul.cfg':
-                print 'é ul.cfg, procurando partes'
                 baseghj = os.path.dirname(origem)
                 nome_crc = 'ul.%08X.%s.*' % (pycrc32.crc32(self.nome_do_jogo), self.codigo_do_jogo)
                 partes = glob.glob(os.path.join(baseghj, nome_crc))
@@ -818,23 +955,20 @@ class painel_de_jogos(wx.Panel):
             selecionados -= 1
         memoria['tamanho_total_dos_jogos'] = atual
         memoria['jogos_selecionados'] = selecionados
-        #print memoria['selecionado_para_copiar']
         wx.PostEvent(self.parent, event)
 
 
-class frame_adicionar_multiplos(wx.Frame):
-    def __init__(self, title, lista_de_jogos, total_geral, pos, size):
-        wx.Frame.__init__(self, None, wx.ID_ANY, title, pos, size)
-        icos = wx.IconBundle()
-        icos.AddIconFromFile (os.path.join(corrente, 'imagens', 'favicon256.png'), wx.BITMAP_TYPE_PNG)
-        icos.AddIconFromFile (os.path.join(corrente, 'imagens', 'favicon128.png'), wx.BITMAP_TYPE_PNG)
-        icos.AddIconFromFile (os.path.join(corrente, 'imagens', 'favicon64.png'), wx.BITMAP_TYPE_PNG)
-        icos.AddIconFromFile (os.path.join(corrente, 'imagens', 'favicon32.png'), wx.BITMAP_TYPE_PNG)
-        icos.AddIconFromFile (os.path.join(corrente, 'imagens', 'favicon16.png'), wx.BITMAP_TYPE_PNG)
-        self.SetIcons(icos)
+class FrameAdicionarMultiplos(wx.Frame):
+    def __init__(self, parent, title, lista_de_jogos, total_geral, pos, size):
+        wx.Frame.__init__(self, parent, wx.ID_ANY, title, pos, size)
+        
+        icone = wx.Icon(os.path.join(corrente, 'imagens', 'icon.ico'), wx.BITMAP_TYPE_ICO)
+        self.SetIcon(icone)
         self.listjogos = lista_de_jogos
         self.lista_de_selecionados = []
-        self.pastadefault = conf_prog.pasta_padrao_jogos
+        conf_prog = Configuracoes()
+        dicionario = conf_prog.leitor_configuracao('DICIONARIO')
+        self.pastadefault = conf_prog.leitor_configuracao('PADRAO')
         self.tamanho_vindo_do_filho = 0
 
         self.painel_principal = wx.Panel(self, wx.ID_ANY)  #Painel Pinricpal
@@ -884,7 +1018,6 @@ class frame_adicionar_multiplos(wx.Frame):
         self.painel_scroll = wx.ScrolledWindow(self.painel_principal, wx.ID_ANY, (0, 0), (-1, 200))
         sizer_jogos = wx.BoxSizer(wx.VERTICAL)
         self.imagens_jogos = imagens_jogos(os.path.join(self.pastadefault, 'ART'))
-        logger.debug(self.imagens_jogos)
         wx.Yield()
         linha_horizontal = wx.StaticLine(self.painel_scroll, id=wx.ID_ANY, pos=(0, 0), size=(-1, -1),
                                          style=wx.LI_HORIZONTAL | wx.BORDER_DOUBLE)
@@ -895,8 +1028,9 @@ class frame_adicionar_multiplos(wx.Frame):
 
         for x in self.listjogos:
             id_jogos += 1
-            ppp = painel_lista_de_jogos(self.painel_scroll, wx.ID_NEW, (0, 0), (-1, -1),
-                                        arquivo_do_jogo=x[0], codigo_do_jogo=x[1], nome_do_jogo=x[2],
+            ppp = PainelListaDeJogos(self.painel_scroll, wx.ID_NEW, (0, 0), (-1, -1),
+                                        arquivo_do_jogo=x[0], codigo_do_jogo=x[1],
+                                        nome_do_jogo=x[2],
                                         tamanho_do_jogo=x[3], Meu_ID=id_jogos)
             sizer_jogos.Add(ppp, 0, wx.ALIGN_CENTER | wx.ALL | wx.EXPAND, 0)
             self.SendSizeEvent()
@@ -929,6 +1063,9 @@ class frame_adicionar_multiplos(wx.Frame):
         self.SendSizeEvent()
 
     def Confirmar(self, event):
+        conf_prog = Configuracoes()
+        dicionario = conf_prog.leitor_configuracao('DICIONARIO')
+        self.pastadefault = conf_prog.leitor_configuracao('PADRAO')
         lista_de_arquivos = []
         for x in memoria['selecionados_multiplos']:
             if memoria['selecionados_multiplos'][x] == False:
@@ -937,27 +1074,27 @@ class frame_adicionar_multiplos(wx.Frame):
                 lista_ini = memoria['selecionados_multiplos'][x]
             for y in lista_ini:
                 lista_de_arquivos.append(y)
-        print lista_de_arquivos
-        definitivo_kkk = ProgressDialog(self, Tradutor('Copiando arquivos selecionados', dicionario),lista_de_arquivos)
+        definitivo_kkk = ProgressCopia(self, Tradutor('Copiando arquivos selecionados', dicionario),lista_de_arquivos)
         definitivo_kkk.Show()
         definitivo_kkk.iniciarcopia()
+        self.Destroy()
 
 
-class painel_lista_de_jogos(wx.Panel):
+class PainelListaDeJogos(wx.Panel):
     def __init__(self, parent, ID, pos, size, arquivo_do_jogo, codigo_do_jogo,
                  nome_do_jogo, tamanho_do_jogo, Meu_ID):
         wx.Panel.__init__(self, parent, wx.ID_ANY, pos, size, wx.EXPAND)
         self.Meu_ID = Meu_ID
-
+        conf_prog = Configuracoes()
+        dicionario = conf_prog.leitor_configuracao('DICIONARIO')
+        self.pastadefault = conf_prog.leitor_configuracao('PADRAO')
         self.arquivo_do_jogo = arquivo_do_jogo
         self.codigo_do_jogo = codigo_do_jogo[0]
         self.parent = parent
         self.tamanho_total = 0
-        pastadefault = conf_prog.pasta_padrao_jogos
         self.tamanho_do_jogo = tamanho_do_jogo
         self.tamanho_computado = tamanho_do_jogo
         fatiar = False
-        print tamanho_do_jogo
         if tamanho_do_jogo > 1024 * 1024 * 750:
             tipo_pio = 'DVD'
             if tamanho_do_jogo > 1024 * 1024 * 1024 * 1024:
@@ -983,8 +1120,8 @@ class painel_lista_de_jogos(wx.Panel):
         self.Bind(wx.EVT_TEXT, self.MudarCodigoNome, self.form1)
         if not nome_do_jogo[0] == 'NOME_DO_JOGO':
             self.form1.SetToolTipString(Tradutor(u'Digite um nome para o jogo', dicionario))
-        codigo_e_nome_encontrado = '%s.%s' %(self.codigo_do_jogo, nome_do_jogo[0].encode('latin-1'))
-        self.organizando_dados_para_gravacao = [arquivo_do_jogo[0], tipo_pio, False, pastadefault, 0, codigo_e_nome_encontrado, fatiar]
+        codigo_e_nome_encontrado = '%s.%s' %(self.codigo_do_jogo, nome_do_jogo[0])
+        self.organizando_dados_para_gravacao = [arquivo_do_jogo[0], tipo_pio, False, self.pastadefault, 0, codigo_e_nome_encontrado, fatiar]
 
         self.form2 = wx.TextCtrl(self, wx.ID_ANY, self.arquivo_do_jogo[0], (0, 0),(200,-1), style=wx.TE_RICH)
         self.form2.Enabled = False
@@ -1031,9 +1168,7 @@ class painel_lista_de_jogos(wx.Panel):
         self.Layout()
 
     def MudarCodigoNome(self, event):
-        print 'digitando'
         dados_da_memoria = memoria['selecionados_multiplos'][self.Meu_ID]
-        print dados_da_memoria
         if not self.checkselecionado.GetValue()==False:
             code = self.form0.GetValue()
             nome = self.form1.GetValue()
@@ -1055,17 +1190,15 @@ class painel_lista_de_jogos(wx.Panel):
             memoria['selecionados_multiplos'][self.Meu_ID] = False
 
 
-class sobre(wx.Frame):
+class FrameSobre(wx.Frame):
     def __init__(self):
+        conf_prog = Configuracoes()
+        dicionario = conf_prog.leitor_configuracao('DICIONARIO')
         wx.Frame.__init__(self, None, wx.ID_ANY, Tradutor('Sobre', dicionario), (-1, -1), (400, 400),
                           style=wx.SYSTEM_MENU | wx.CAPTION | wx.CLOSE_BOX)
-        icos = wx.IconBundle()
-        icos.AddIconFromFile (os.path.join(corrente, 'imagens', 'favicon256.png'), wx.BITMAP_TYPE_PNG)
-        icos.AddIconFromFile (os.path.join(corrente, 'imagens', 'favicon128.png'), wx.BITMAP_TYPE_PNG)
-        icos.AddIconFromFile (os.path.join(corrente, 'imagens', 'favicon64.png'), wx.BITMAP_TYPE_PNG)
-        icos.AddIconFromFile (os.path.join(corrente, 'imagens', 'favicon32.png'), wx.BITMAP_TYPE_PNG)
-        icos.AddIconFromFile (os.path.join(corrente, 'imagens', 'favicon16.png'), wx.BITMAP_TYPE_PNG)
-        self.SetIcons(icos)
+        icone = wx.Icon(os.path.join(corrente, 'imagens', 'icon.ico'), wx.BITMAP_TYPE_ICO)
+        self.SetIcon(icone)
+
         self.codigo_html = u'''
         <html>
         <body bgcolor="#FFFFFF">
@@ -1125,21 +1258,16 @@ class sobre(wx.Frame):
         self.Destroy()
 
 
-class painel_configuracao(wx.Frame):
+class FrameConfiguracao(wx.Frame):
     def __init__(self, parent, ID, title):
         wx.Frame.__init__(self, parent, ID, title, wx.DefaultPosition, style=wx.SYSTEM_MENU | wx.CAPTION | wx.CLOSE_BOX)
         self.parent = parent
-        icos = wx.IconBundle()
-        icos.AddIconFromFile (os.path.join(corrente, 'imagens', 'favicon256.png'), wx.BITMAP_TYPE_PNG)
-        icos.AddIconFromFile (os.path.join(corrente, 'imagens', 'favicon128.png'), wx.BITMAP_TYPE_PNG)
-        icos.AddIconFromFile (os.path.join(corrente, 'imagens', 'favicon64.png'), wx.BITMAP_TYPE_PNG)
-        icos.AddIconFromFile (os.path.join(corrente, 'imagens', 'favicon32.png'), wx.BITMAP_TYPE_PNG)
-        icos.AddIconFromFile (os.path.join(corrente, 'imagens', 'favicon16.png'), wx.BITMAP_TYPE_PNG)
-        self.SetIcons(icos)
+        icone = wx.Icon(os.path.join(corrente, 'imagens', 'icon.ico'), wx.BITMAP_TYPE_ICO)
+        self.SetIcon(icone)
         painel = wx.Panel(self, wx.ID_ANY, (0, 0), (400, 300))
-        pastadefault = conf_prog.pasta_padrao_jogos
-        config_pasta_jogos = conf_prog.leitor_configuracao('pasta_destino_jogos')
-        lng_select = conf_prog.leitor_configuracao('dicionario')
+        conf_prog = Configuracoes()
+        config_pasta_jogos = conf_prog.leitor_configuracao('PADRAO')
+        dicionario = conf_prog.leitor_configuracao('DICIONARIO')
         self.estado = config_pasta_jogos
 
         text0 = wx.StaticText(painel, wx.ID_ANY,
@@ -1152,7 +1280,7 @@ class painel_configuracao(wx.Frame):
         self.Bind(wx.EVT_BUTTON, self.PegaPastaJogo, botao0)
         text1 = wx.StaticText(painel, wx.ID_ANY,
                               Tradutor(u"Arquivos de Tradução", dicionario), (0, 0), style= wx.ALIGN_CENTER_VERTICAL)
-        self.form1 = wx.TextCtrl(painel, wx.ID_ANY, lng_select, (0, 0), (250, -1))
+        self.form1 = wx.TextCtrl(painel, wx.ID_ANY, dicionario, (0, 0), (250, -1))
         if not self.form1.GetValue() == '':
             self.form1.Enabled = True
         else:
@@ -1213,6 +1341,9 @@ class painel_configuracao(wx.Frame):
         self.Centre()
 
     def PegaPastaJogo(self, event):
+
+        conf_prog = Configuracoes()
+        dicionario = conf_prog.leitor_configuracao('DICIONARIO')
         dlg = wx.DirDialog(self, Tradutor(u"Selecionando pasta de jogos...", dicionario), corrente, style=wx.OPEN)
         if dlg.ShowModal() == wx.ID_OK:
             valor_dialog = dlg.GetPath()
@@ -1229,6 +1360,9 @@ class painel_configuracao(wx.Frame):
             dlg.Destroy()
 
     def PegaArquivoTradu(self, event):
+
+        conf_prog = Configuracoes()
+        dicionario = conf_prog.leitor_configuracao('DICIONARIO')
         self.wildcard2 = u"%s (*.lng)|*.lng" % (Tradutor(u'Arquivo de Tradução', dicionario))
         dlg2 = wx.FileDialog(self, Tradutor(u'Selecionando arquivo de tradução', dicionario), corrente, style=wx.OPEN,
                              wildcard=self.wildcard2)
@@ -1238,17 +1372,18 @@ class painel_configuracao(wx.Frame):
             self.form1.SetValue(valor_dialog)
 
     def Confirmar(self, event):
+        conf_prog = Configuracoes()
         confg1 = self.form0.GetValue()
         confg2 = self.form1.GetValue()
-        conf_prog.mudar_configuracao('pasta_destino_jogos', confg1)
-        conf_prog.mudar_configuracao('dicionario', confg2)
+        conf_prog.mudar_configuracao('PADRAO', confg1)
+        conf_prog.mudar_configuracao('DICIONARIO', confg2)
         self.DVD = self.form2.GetValue()
         self.CD = self.form3.GetValue()
         self.ART = self.form4.GetValue()
         self.CFG = self.form5.GetValue()
 
-        lista_de_diretorios = [['pasta_DVD', self.DVD], ['pasta_CD', self.CD], ['pasta_ART', self.ART],
-                               ['pasta_CFG', self.CFG]]
+        lista_de_diretorios = [['DVD', self.DVD], ['CD', self.CD], ['ART', self.ART],
+                               ['CFG', self.CFG]]
         for dirs in lista_de_diretorios:
             try:
                 os.makedirs(dirs[1])
@@ -1262,34 +1397,38 @@ class painel_configuracao(wx.Frame):
             wx.PostEvent(self.parent, event)
 
 
-class janela_adicionar_iso(wx.Frame):
+class FrameAdicionarIso(wx.Frame):
     def __init__(self, parent, ID, title, endereco=('', False), codigo_do_jogo=(False, False),
                  nome_do_jogo=('NOVO_JOGO', True), tamanho_do_jogo=0, lista_de_jogos=[]):
         wx.Frame.__init__(self, parent, ID, title, wx.DefaultPosition, style=wx.SYSTEM_MENU | wx.CAPTION | wx.CLOSE_BOX)
+
+
+        conf_prog = Configuracoes()
+        self.config_pasta_jogos = conf_prog.leitor_configuracao('PADRAO')
+        dicionario = conf_prog.leitor_configuracao('DICIONARIO')
         texto_adicional = '\n\n%s' % Tradutor(
             u'OBSERVAÇÃO: Caso coloque um nome já usado o programa se encarregará de por um nome válido, Ex.:XXX_000.00.NOME_DO_ARQUIVO - 01',
             dicionario)
+        print lista_de_jogos
         for procus in lista_de_jogos:
             if procus[1] == codigo_do_jogo[0]:
+                print (procus[2], procus[0])
+                texto1 = procus[2]
+                texto2 = procus[0]
                 T1 = Tradutor(u'OBSERVAÇÃO: Já existe uma jogo com esse mesmo código localizado em', dicionario)
                 T2 = Tradutor(u'de nome', dicionario)
                 T3 = Tradutor(u'e tamanho', dicionario)
                 texto_adicional = u'\n\n%s "%s" %s "%s" %s "%s". O programa se encarregará de colocar um nome válido. Ex.: XXX_000.00.NOME_DO_ARQUIVO - 01' % (
-                T1, procus[0].decode('latin-1'), T2, procus[2].decode('latin-1'), T3, convert_tamanho(procus[3]))
-        icos = wx.IconBundle()
-        icos.AddIconFromFile (os.path.join(corrente, 'imagens', 'favicon256.png'), wx.BITMAP_TYPE_PNG)
-        icos.AddIconFromFile (os.path.join(corrente, 'imagens', 'favicon128.png'), wx.BITMAP_TYPE_PNG)
-        icos.AddIconFromFile (os.path.join(corrente, 'imagens', 'favicon64.png'), wx.BITMAP_TYPE_PNG)
-        icos.AddIconFromFile (os.path.join(corrente, 'imagens', 'favicon32.png'), wx.BITMAP_TYPE_PNG)
-        icos.AddIconFromFile (os.path.join(corrente, 'imagens', 'favicon16.png'), wx.BITMAP_TYPE_PNG)
-        self.SetIcons(icos)
+                T1, texto2, T2, texto1, T3, convert_tamanho(procus[3]))
+
+        icone = wx.Icon(os.path.join(corrente, 'imagens', 'icon.ico'), wx.BITMAP_TYPE_ICO)
+        self.SetIcon(icone)
         self.parent = parent
         self.endereco_do_jogo = endereco[0]
         self.codigo_do_jogo = codigo_do_jogo
         self.nome_do_jogo = nome_do_jogo[0]
         self.tamanho_do_jogo = convert_tamanho(tamanho_do_jogo)
-        pastadefault = conf_prog.pasta_padrao_jogos
-        self.config_pasta_jogos = conf_prog.leitor_configuracao('pasta_destino_jogos')
+
         self.midia_origem = ['CD', 'DVD']
         self.padrao_destino = ['ISO', 'ul.cfg']
 
@@ -1389,7 +1528,8 @@ class janela_adicionar_iso(wx.Frame):
 
     def Confirmar(self, event):
         origem = self.endereco_do_jogo
-
+        conf_prog = Configuracoes()
+        dicionario = conf_prog.leitor_configuracao('DICIONARIO')
         valor_midia = self.radius1.GetSelection()
         valor_padrao = self.radius2.GetSelection()
         midia_temp = self.midia_origem[valor_midia]
@@ -1404,7 +1544,7 @@ class janela_adicionar_iso(wx.Frame):
         # '(origem, tipo, checado, destino, tamanho, nome, fatiar)'
         mensagem = Tradutor('Copiando ', dicionario)
 
-        self.Progress = ProgressDialog(self, u'%s%s' % (mensagem, self.form1.GetValue()),
+        self.Progress = ProgressCopia(self, u'%s%s' % (mensagem, self.form1.GetValue()),
                                        [[origem, tipo, checado, destino, tamanho, nome, fatiar]],
                                        cancelar_ativo=True)
         self.Progress.Show()
@@ -1415,17 +1555,14 @@ class janela_adicionar_iso(wx.Frame):
         self.Destroy()
 
 
-class Copiar_para(wx.Frame):
+class CopiarPara(wx.Frame):
     def __init__(self, parent, ID, title, endereco_do_jogo, codigo_do_jogo, nome_do_jogo, tamanho_do_jogo=0,
                  imagem=False, cfg=False, tipo_origem='', tipo_destino=''):
         wx.Frame.__init__(self, parent, ID, title, wx.DefaultPosition, style=wx.SYSTEM_MENU | wx.CAPTION | wx.CLOSE_BOX)
-        icos = wx.IconBundle()
-        icos.AddIconFromFile (os.path.join(corrente, 'imagens', 'favicon256.png'), wx.BITMAP_TYPE_PNG)
-        icos.AddIconFromFile (os.path.join(corrente, 'imagens', 'favicon128.png'), wx.BITMAP_TYPE_PNG)
-        icos.AddIconFromFile (os.path.join(corrente, 'imagens', 'favicon64.png'), wx.BITMAP_TYPE_PNG)
-        icos.AddIconFromFile (os.path.join(corrente, 'imagens', 'favicon32.png'), wx.BITMAP_TYPE_PNG)
-        icos.AddIconFromFile (os.path.join(corrente, 'imagens', 'favicon16.png'), wx.BITMAP_TYPE_PNG)
-        self.SetIcons(icos)
+        conf_prog = Configuracoes()
+        dicionario = conf_prog.leitor_configuracao('DICIONARIO')
+        icone = wx.Icon(os.path.join(corrente, 'imagens', 'icon.ico'), wx.BITMAP_TYPE_ICO)
+        self.SetIcon(icone)
         self.endereco_do_jogo = endereco_do_jogo
         self.codigo_do_jogo = codigo_do_jogo
         self.nome_do_jogo = nome_do_jogo
@@ -1494,6 +1631,9 @@ class Copiar_para(wx.Frame):
         self.Centre()
 
     def PegaPastaDestino(self, event):
+        conf_prog = Configuracoes()
+        dicionario = conf_prog.leitor_configuracao('DICIONARIO')
+
         dlg = wx.DirDialog(self, Tradutor(u"Selecionando pasta destino...", dicionario), corrente, style=wx.OPEN)
         if dlg.ShowModal() == wx.ID_OK:
             self.valor_dialog = dlg.GetPath()
@@ -1529,6 +1669,8 @@ class Copiar_para(wx.Frame):
 
 
     def Confirmar(self, event):
+        conf_prog = Configuracoes()
+        dicionario = conf_prog.leitor_configuracao('DICIONARIO')
         if self.form0.GetValue() == '':
             msgbox = wx.MessageDialog(self,
                                       Tradutor(u'Escolhar um dispositivo ou pasta como destino da cópia.', dicionario),
@@ -1554,50 +1696,31 @@ class Copiar_para(wx.Frame):
             fatiar = True if self.radius1.GetSelection() == 0 else False
 
             if os.path.basename(origem) == 'ul.cfg':
-                print 'é ul.cfg, procurando partes'
                 baseghj = os.path.dirname(origem)
                 nome_crc = 'ul.%08X.%s.*' % (pycrc32.crc32(self.nome_do_jogo), self.codigo_do_jogo)
                 partes = glob.glob(os.path.join(baseghj, nome_crc))
                 origem = partes
-
-            print (origem,)
-            print tipo
-            print checado
-            print destino
-            print tamanho
-            print (nome,)
-            print fatiar
             conf_final = [origem, tipo, checado, destino, tamanho, nome, fatiar]
             self.lista_a_ser_copiada.append(conf_final)
-            print self.lista_a_ser_copiada
-
-
-
-            # '(origem, tipo, checado, destino, tamanho, nome, fatiar)'
             mensagem = Tradutor('Copiando ', dicionario)
-
-            self.Progress = ProgressDialog(self, u'%s%s' % (mensagem, nome),
+            self.Progress = ProgressCopia(self, u'%s%s' % (mensagem, nome),
                                            self.lista_a_ser_copiada, cancelar_ativo=True)
             self.Progress.Show()
             self.Progress.iniciarcopia()
             self.Destroy()
 
 
-class painel_config_jogo(wx.Frame):
+class FrameConfiguracaoJogo(wx.Frame):
     def __init__(self, parent, ID, title, endereco_arquivo_cfg, nome_do_jogo):
-        print endereco_arquivo_cfg
         wx.Frame.__init__(self, parent, ID, title, wx.DefaultPosition, style=wx.SYSTEM_MENU | wx.CAPTION | wx.CLOSE_BOX)
-        icos = wx.IconBundle()
-        icos.AddIconFromFile (os.path.join(corrente, 'imagens', 'favicon256.png'), wx.BITMAP_TYPE_PNG)
-        icos.AddIconFromFile (os.path.join(corrente, 'imagens', 'favicon128.png'), wx.BITMAP_TYPE_PNG)
-        icos.AddIconFromFile (os.path.join(corrente, 'imagens', 'favicon64.png'), wx.BITMAP_TYPE_PNG)
-        icos.AddIconFromFile (os.path.join(corrente, 'imagens', 'favicon32.png'), wx.BITMAP_TYPE_PNG)
-        icos.AddIconFromFile (os.path.join(corrente, 'imagens', 'favicon16.png'), wx.BITMAP_TYPE_PNG)
-        self.SetIcons(icos)
+        icone = wx.Icon(os.path.join(corrente, 'imagens', 'icon.ico'), wx.BITMAP_TYPE_ICO)
+        self.SetIcon(icone)
         self.endereco_arquivo_cfg = endereco_arquivo_cfg
         self.nome_do_jogo = nome_do_jogo
+        conf_prog = Configuracoes()
+        dicionario = conf_prog.leitor_configuracao('DICIONARIO')
 
-        self.manipula_cfg_jogo = manipula_cfg_jogo(endereco_arquivo_cfg)
+        self.manipula_cfg_jogo = ManipulaCfgJogo(endereco_arquivo_cfg)
 
         self.info_Nome_do_jogo = self.manipula_cfg_jogo.leitor_cfg('Title')
         self.info_sistema_de_video = self.manipula_cfg_jogo.leitor_cfg('Region')
@@ -1616,13 +1739,10 @@ class painel_config_jogo(wx.Frame):
         self.info_desenvolvedor = self.manipula_cfg_jogo.leitor_cfg('Developer')
 
         self.comp_callbacktimer = self.manipula_cfg_jogo.leitor_cfg('$CallbackTimer')
-        print '--> %s' % self.comp_callbacktimer
         self.comp_AltStartup = self.manipula_cfg_jogo.leitor_cfg('$AltStartup')
-        print '--> %s' % self.comp_AltStartup
         self.comp_dnas = self.manipula_cfg_jogo.leitor_cfg("$DNAS")
         self.comp_xfg = self.manipula_cfg_jogo.leitor_cfg("$Compatibility")
 
-        print self.comp_xfg
         if self.comp_xfg == '':
             self.comp_compatibilidade = [0]
         else:
@@ -1896,14 +2016,14 @@ class painel_config_jogo(wx.Frame):
         self.Destroy()
 
 
-class ProgressDialog(wx.Dialog):
+class ProgressCopia(wx.Dialog):
     def __init__(self, parent, title, lista_de_arquivos, cancelar_ativo=True):
         wx.Dialog.__init__(self, parent, title=title, style=wx.CAPTION)
         """ O ProgressDialog é responsável pela gravação de arquivos, sendo que durante a cópia é apresentado uma
             barra de progresso.
             Exemplo de uso:
 
-            self.ProgressDialog = ProgressDialog(None, u'Título', Lista_de_arquivos)
+            self.ProgressDialog = ProgressCopia(None, u'Título', Lista_de_arquivos)
             self.ProgressDialog.Show()
             self.frame.iniciarcopia()
 
@@ -1926,6 +2046,9 @@ class ProgressDialog(wx.Dialog):
         self.tamanho_total = 0
         self.dados_gravados_total = 0
         self.quant = len(lista_de_arquivos)
+        conf_prog = Configuracoes()
+        dicionario = conf_prog.leitor_configuracao('DICIONARIO')
+
         self.mensagem1 = Tradutor('Copiando arquivo', dicionario)
         self.mensagem2 = Tradutor('de', dicionario)
         self.progresso = 0
@@ -1977,12 +2100,9 @@ class ProgressDialog(wx.Dialog):
             tamanho = x[4]
             novo_nome = x[5]
             fatiar = x[6]
-            print fatiar
-            print tipo_de_arquivo
-
             self.arquivo_destino = os.path.join(destino, novo_nome)
             if fatiar == True and tipo_de_arquivo != 'ulCD' and tipo_de_arquivo != 'ulDVD':
-                print 'fatiando'
+
                 fatias = 0
                 with open(endereco_de_origem, 'rb') as origem_aberto:
                     while True:
@@ -2011,8 +2131,6 @@ class ProgressDialog(wx.Dialog):
             else:
                 self.tamanho_desse_arquivo = tamanho
                 if fatiar == True and type(endereco_de_origem) == list:
-                    print 'fatiando ul já fatiado'
-                    print endereco_de_origem
                     contgh = 0
 
                     for g in endereco_de_origem:
@@ -2039,7 +2157,6 @@ class ProgressDialog(wx.Dialog):
                                         break
                         contgh += 1
                 else:
-                    print 'juntando ul ou iso '
                     if not type(endereco_de_origem) == list:
                         endereco_de_origem = [endereco_de_origem]
 
@@ -2090,7 +2207,7 @@ class ProgressDialog(wx.Dialog):
             try:
                 os.makedirs(item[3])
             except:
-                print "Talvez você não tenha permição para isso"
+                pass
 
     def checa_se_existe(self, item):
         """
@@ -2109,7 +2226,6 @@ class ProgressDialog(wx.Dialog):
         """
             Calcula o tamanho em bytes do arquivo ou grupo de arquivo
         """
-        print (item,)
         if item[1] == 'ulDVD' or item[1] == 'ulCD':
             v = 0
             for y in item[0]:
@@ -2131,7 +2247,6 @@ class ProgressDialog(wx.Dialog):
         nome = item[5]
         origem = item[0]
         if type(origem) == list:
-            print 'é lista'
             origem = origem[0]
 
         nome_origem_com_extensao = os.path.basename(origem)
@@ -2141,13 +2256,11 @@ class ProgressDialog(wx.Dialog):
         apenas_nome_origem = nome_origem_com_extensao[:cor]
 
         if item[1] != 'DVD' and item[1] != 'CD' and item[1] != 'ulCD' and item[1] != 'ulDVD':
-            print item[1]
             if nome == False:
                 nome = apenas_nome_origem
                 nome_base = nome
                 nome = "%s.%s" % (nome_base, extensao)
                 cont = 0
-                print os.path.join(destino, nome)
                 if item[1] == 'VMC':
                     while os.path.exists(os.path.join(destino, nome)):
                         if os.path.exists(os.path.join(destino, '%s.bkp' % nome)):
@@ -2163,19 +2276,18 @@ class ProgressDialog(wx.Dialog):
                         cont += 1
                         nome = '%s - %02d.%s' % (nome_base, cont, extensao)
                     item[5] = nome
-                print item
             else:
                 nome_base = nome
-                nome = u"%s.%s" % (nome_base, extensao)
+                nome = "%s.%s" % (nome_base, extensao)
                 cont = 0
                 while os.path.exists(os.path.join(destino, nome)):
                     cont += 1
                     nome = '%s - %02d.%s' % (nome_base, cont, extensao)
                 item[5] = nome
-                print item
+
         else:
             if item[6] == True:
-                print 'fazendo isso'
+
                 apenas_nome = nome[12:]
                 apenas_codigo = nome[0:11]
                 nome_base = 'ul.%08X.%s' % (pycrc32.crc32(apenas_nome), apenas_codigo)
@@ -2183,7 +2295,7 @@ class ProgressDialog(wx.Dialog):
                 cont = 0
                 novo_nome_ul = apenas_nome
                 nom = nome_base
-                print os.path.join(destino, nome)
+
                 while os.path.exists(os.path.join(destino, nome)):
                     cont += 1
                     novo_nome_ul = "%s - %02d" % (apenas_nome, cont)
@@ -2193,29 +2305,31 @@ class ProgressDialog(wx.Dialog):
                 nomeul_sem_extensao = nom
                 nomeul_com_extensao = nome
                 item[5] = nomeul_sem_extensao
-                print item
+
                 conteudo_ul = ''
                 if os.path.exists(os.path.join(destino, 'ul.cfg')):
                     with open(os.path.join(destino, 'ul.cfg'), 'r') as ulaberto:
                         conteudo_ul = ulaberto.read()
+                        conteudo_ul = conteudo_ul
 
                 with open(os.path.join(destino, 'ul.cfg'), 'w') as ulaberto2:
                     ul = manipula_ul()
                     partes = int(item[4] / 1073741824) + 1
                     novo_ul = ul.criar_nome_ul(apenas_codigo, novo_nome_ul,
                                                'CD' if item[1] == 'CD' or item[1] == 'ulCD' else 'DVD', partes)
-
-                    conteudo_ul2 = '%s%s' % (conteudo_ul, novo_ul)
-                    ulaberto2.write(conteudo_ul2)
+                    print (conteudo_ul.decode('utf-8'), novo_ul)
+                    conteudo_ul2 = '%s%s' % (conteudo_ul.decode('utf-8'), novo_ul)
+                    ulaberto2.write(conteudo_ul2.encode('utf-8'))
             else:
-                nome_base = nome.decode('latin-1')
+
+                nome_base = nome
                 nome = "%s.iso" % (nome_base)
                 cont = 0
                 while os.path.exists(os.path.join(destino, nome)):
                     cont += 1
                     nome = '%s - %02d.iso' % (nome_base, cont)
                 item[5] = nome
-                print item
+
 
     def on_timer(self, event):
         if self.acabouse == True:
@@ -2234,16 +2348,99 @@ class ProgressDialog(wx.Dialog):
             self.Destroy()
 
 
+class LoginDialog(wx.Dialog):
+
+    def __init__(self, parent, nova_senha=False):
+        """self, Window parent, int id=-1, String title=EmptyString,
+            Point pos=DefaultPosition, Size size=DefaultSize,
+            long style=DEFAULT_DIALOG_STYLE, String name=DialogNameStr"""
+        wx.Dialog.__init__(self, parent, wx.ID_ANY, u"Autorização", (-1, -1), (300, 150))
+        if nova_senha == True:
+            self.SetTitle('Adicione uma senha administrativa')
+
+        self.nova_senha = nova_senha
+        self.mainSizer = wx.BoxSizer(wx.VERTICAL)
+        btnSizer = wx.BoxSizer(wx.HORIZONTAL)
+
+        textsenha = wx.StaticText(self, label="Nome:")
+        self.formlogin = wx.TextCtrl(self)
+        self.addWidgets(textsenha, self.formlogin)
+
+        textsenha = wx.StaticText(self, label="Senha:")
+        self.formsenha = wx.TextCtrl(self, style=wx.TE_PASSWORD)
+        self.addWidgets(textsenha, self.formsenha)
+
+        okBtn = wx.Button(self, wx.ID_OK)
+        self.Bind(wx.EVT_BUTTON, self.Confirmar, okBtn)
+        btnSizer.Add(okBtn, 0, wx.CENTER|wx.ALL, 5)
+        cancelBtn = wx.Button(self, wx.ID_CANCEL)
+        btnSizer.Add(cancelBtn, 0, wx.CENTER|wx.ALL, 5)
+
+        self.mainSizer.Add(btnSizer, 0, wx.CENTER)
+        self.SetSizer(self.mainSizer)
+
+    def Confirmar(self, event):
+
+        self.autorizado = False
+        arquivo_de_senha = os.path.join(corrente,'pwd')
+        login = self.formlogin.GetValue()
+        senha = self.formsenha.GetValue()
+        senha_hash = hashlib.sha224(senha).hexdigest()
+        if self.nova_senha == False:
+            print 'checando'
+            if os.path.exists(arquivo_de_senha):
+                with open(arquivo_de_senha, 'r') as lendopass:
+                    aberto = lendopass.readlines()
+                    for x in aberto:
+                        splitando = x.split(' = ')
+                        if len(splitando) == 2:
+                            login_no_arquivo = splitando[0]
+                            print login_no_arquivo
+                            if login == login_no_arquivo:
+                                senha_no_arquivo = splitando[1][0:56]
+                                if senha_hash == senha_no_arquivo:
+                                    self.autorizado = True
+            else:
+                login_padrao = 'admin'
+                senha_padrao = hashlib.sha224("admin").hexdigest()
+                if login == login_padrao and senha_hash == senha_padrao:
+                    self.autorizado = True
+
+        else:
+            if os.path.exists(arquivo_de_senha):
+                with open(arquivo_de_senha, 'r') as lendopass:
+                    aberto = lendopass.read()
+            else:
+                aberto = ''
+
+            with open(arquivo_de_senha, 'w') as escrevendopass:
+                novo_texto = "%s = %s" %(login, senha_hash)
+                escrevendo = '%s\n%s' %(aberto, novo_texto)
+                escrevendopass.write(escrevendo)
+        print self.autorizado
+        self.Destroy()
+
+
+
+
+    def addWidgets(self, lbl, txt):
+        """
+        """
+        sizer = wx.BoxSizer(wx.HORIZONTAL)
+        sizer.Add(lbl, 0, wx.ALL|wx.CENTER, 5)
+        sizer.Add(txt, 1, wx.EXPAND|wx.ALL, 5)
+        self.mainSizer.Add(sizer, 0, wx.EXPAND)
+
 if __name__ == '__main__':
     class meu_programa2(wx.App):
         def OnInit(self):
             self.title = "PhanterPS2"
-            self.frame = frame_adicionar_multiplos(self.title, [], (-1, -1), (600, 600))
+            self.frame = FrameAdicionarMultiplos(self.title, [], (-1, -1), (600, 600))
             self.frame.Show()
             self.SetTopWindow(self.frame)
             return True
 
-    y = meu_programa()
+    y = MeuPrograma()
     y.MainLoop()
 
 
