@@ -142,11 +142,11 @@ class VerificaJogo():
         except iso9660.ISO9660IOError:
             x = False
 
-
         return x
 
 
 class ManipulaCfgJogo():
+
     def __init__(self, endereco_cfg, lista=(1, 2, 4, 8, 16, 32, 64, 128)):
         """
 
@@ -207,7 +207,6 @@ class ManipulaCfgJogo():
 
             resultado = ''
 
-
         return resultado
 
     def mudar_dict_cfg(self, chave, resultado):
@@ -232,7 +231,7 @@ class ManipulaCfgJogo():
             aberto.write(texto)
 
 
-class imagens_jogos():
+class LocalizaArt():
     def __init__(self, pasta_das_imagens):
 
         self.pasta_das_imagens = pasta_das_imagens
@@ -262,14 +261,7 @@ class imagens_jogos():
         return self.cove
 
 
-def eh_cover_art(endereco_da_imagem):
-    if os.path.exists(endereco_da_imagem):
-        nome = os.path.basename(endereco_da_imagem)
-        if procura_coverart.match(nome):
-            return True
-
-
-class lista_de_jogos():
+class LocalizaJogos():
     def __init__(self, pasta_de_jogos):
         self.lista_ul = []
         self.lista_DVD = []
@@ -277,25 +269,23 @@ class lista_de_jogos():
         self.tamanho_total = 0
         self.quant_de_jogos = 0
 
-        self.extrai_ul = manipula_ul()
+        self.extrai_ul = ManipulaUl()
 
         if os.path.exists(os.path.join(pasta_de_jogos, 'ul.cfg')):
             lista_parcial = self.extrai_ul(os.path.join(pasta_de_jogos, 'ul.cfg'))
 
             self.lista_ul = lista_parcial[0]
-            print self.lista_ul
             self.tamanho_total = lista_parcial[1]
             self.quant_de_jogos = len(self.lista_ul)
         else:
             pass
 
         if os.path.exists(os.path.join(pasta_de_jogos, 'DVD')):
-            lDVD = os.listdir(os.path.join(pasta_de_jogos, 'DVD'))
-            for x in lDVD:
+            ldvd = os.listdir(os.path.join(pasta_de_jogos, 'DVD'))
+            for x in ldvd:
                 if procura_cod_e_nome.match(x):
                     self.quant_de_jogos += 1
                     cod_kjh = x[:11]
-
 
                     nom_kjh = x[12:-4].decode('latin-1')
 
@@ -309,8 +299,8 @@ class lista_de_jogos():
             pass
 
         if os.path.exists(os.path.join(pasta_de_jogos, 'CD')):
-            lCD = os.listdir(os.path.join(pasta_de_jogos, 'CD'))
-            for x in lCD:
+            lcd = os.listdir(os.path.join(pasta_de_jogos, 'CD'))
+            for x in lcd:
                 if procura_cod_e_nome.match(x):
                     self.quant_de_jogos += 1
                     nomefsd = x[12:-4].decode('latin-1')
@@ -329,17 +319,24 @@ class lista_de_jogos():
         self.jogos_e_info = [self.lista_total_de_jogos, self.quant_de_jogos, self.tamanho_total]
 
 
-class manipula_ul():
+class ManipulaUl():
+
     def __init__(self):
         self.progresso = 0
-        pass
+        self.jogos_e_info_ul = ""
+        self.zarquivos = ""
+        self.tamanho_maximo_fatia = 0
+        self.endereco_do_jogo = ""
+        self.codigo_do_jogo = 'XXX_000.00'
+        self.nome_do_jogo = 'NOME DO JOGO'
 
     def __call__(self, endereco_do_arquivo):
         self.extrai_ul(endereco_do_arquivo)
         return self.jogos_e_info_ul
 
-    def criar_nome_ul(self, codigo_do_jogo, nome_do_jogo, midia='DVD', quant_de_partes=5):
-        cod = 'ul.%s' % (codigo_do_jogo)
+    @staticmethod
+    def criar_nome_ul(codigo_do_jogo, nome_do_jogo, midia='DVD', quant_de_partes=5):
+        cod = 'ul.%s' % codigo_do_jogo
         if midia == 'CD':
             tipo_id = 12
         else:
@@ -357,12 +354,13 @@ class manipula_ul():
         results = results.decode('utf-8')
         return results
 
-    def criar_nome_base_arquivo(self, codigo_do_jogo, nome_do_jogo):
+    @staticmethod
+    def criar_nome_base_arquivo(codigo_do_jogo, nome_do_jogo):
         crc = pycrc32.crc32(nome_do_jogo)
         nomebase = 'ul.%08X.%s' % (crc, codigo_do_jogo)
         return nomebase
 
-    def extrai_ul(self, endereco_do_arquivo, renomear=False, novo_nome=''):
+    def extrai_ul(self, endereco_do_arquivo):
         with open(endereco_do_arquivo, 'r') as arquivo_lido:
 
             conteudo = arquivo_lido.read()
@@ -398,8 +396,8 @@ class manipula_ul():
                 tamanhossssd += tamtam
             tamanho_totaldf += tamanhossssd
             jogos_separados.append(
-                [endereco_do_arquivo, pedaco_codigo_nrm, pedaco_so_o_nome_nrm.decode('utf-8'), tamanhossssd, pedaco_quant_partes,
-                 pedaco_tipo])
+                [endereco_do_arquivo, pedaco_codigo_nrm, pedaco_so_o_nome_nrm.decode('utf-8'),
+                 tamanhossssd, pedaco_quant_partes, pedaco_tipo])
         self.jogos_e_info_ul = [jogos_separados, tamanho_totaldf]
 
         return self.jogos_e_info_ul
@@ -411,7 +409,7 @@ class manipula_ul():
             self.zarquivos = arquivos
         self.progresso = 0
         gravados = 0
-        BUFFER = 1024
+        buffer_local = 1024
         destino = os.path.join(destino, nome)
         with open(destino, "wb") as arquico_alvo:
             tamanho_total = 0
@@ -425,41 +423,39 @@ class manipula_ul():
                     x = os.stat(f)
                     tam = x.st_size
                     while True:
-                        y = arquivo_in.read(BUFFER)
-                        tam -= BUFFER
-                        gravados += BUFFER
+                        y = arquivo_in.read(buffer_local)
+                        tam -= buffer_local
+                        gravados += buffer_local
                         self.progresso = int((float(gravados) / float(tamanho_total)) * 100)
 
                         arquico_alvo.write(y)
                         if not tam > 0:
                             break
 
-    def cortar_aquivos(self, endereco_do_jogo, codigo_do_jogo, nome_do_jogo, destino='', BUFFER=1024,
+    def cortar_aquivos(self, endereco_do_jogo, codigo_do_jogo, nome_do_jogo, destino='', buffer_local=1024,
                        tamanho_maximo_fatia=1073741824):
 
         self.endereco_do_jogo = endereco_do_jogo
         self.codigo_do_jogo = codigo_do_jogo
         self.nome_do_jogo = nome_do_jogo
-        self.tamanho_maximo_fatia = tamanho_maximo_fatia  # 1GB  - tamanho_maximo_fatia chapter size
-        self.BUFFER = BUFFER
+        self.tamanho_maximo_fatia = tamanho_maximo_fatia  # 1gb  - tamanho_maximo_fatia chapter size
+        buffer_local = buffer_local
         fatias = 0
-        codigo_crc = "%08X" % (self.nome_do_jogo)
+        codigo_crc = "%08X" % self.nome_do_jogo
 
-        ARQUIVO = self.endereco_do_jogo
-        contador_de_bytes_gravados = 0
-        fim = False
-        with open(ARQUIVO, 'rb') as arquivo_in:
+        endereco_arquivo = self.endereco_do_jogo
+        datax = 0
+        with open(endereco_arquivo, 'rb') as arquivo_in:
             while True:
                 arquivo_alvo = open('%sul.%s.%s.%02d' % (destino, codigo_crc, self.codigo_do_jogo, fatias), 'wb')
                 bytes_escritos = 0
                 while bytes_escritos < self.tamanho_maximo_fatia:
 
-                    datax = arquivo_in.read(self.BUFFER)
+                    datax = arquivo_in.read(buffer_local)
                     if datax:
                         arquivo_alvo.write(datax)
-                        bytes_escritos += self.BUFFER
+                        bytes_escritos += buffer_local
                     else:
-                        fim = True
                         break
                 fatias += 1
                 if datax:
@@ -493,6 +489,7 @@ class manipula_ul():
         # renomeados[x] = x.replace(crc_antigo_nome, crc_novo_nome)
         for x in lista_glob:
             os.rename(x, x.replace(crc_antigo_nome, crc_novo_nome))
+
         with open(os.path.join(pasta_do_arquivo, 'ul.cfg'), 'r') as aberto:
             lido = aberto.read()
 
@@ -514,11 +511,11 @@ class manipula_ul():
 
             mudado_hex = convertido_hex.replace(antigo_nome_hex, novo_nome_hex)
 
-            mudado = mudado_hex.decode('hex')
+            texto_mudado = mudado_hex.decode('hex')
 
-        aberto.close()
-        with open(os.path.join(pasta_do_arquivo, 'ul.cfg'), 'w') as escrever:
-            escrever.write(mudado)
+            with open(os.path.join(pasta_do_arquivo, 'ul.cfg'), 'w') as escrever:
+                escrever.write(texto_mudado)
+
         return novo_nome
 
     def deletar_jogo_ul(self, endereco_pasta, nome_do_jogo):
@@ -537,7 +534,6 @@ class manipula_ul():
 
         for x in lista_glob:
             os.remove(x)
-
 
         with open(os.path.join(endereco_pasta, 'ul.cfg'), 'r') as aberto:
             lido = aberto.read()
@@ -562,29 +558,36 @@ def convert_tamanho(valor=''):
         tamanho = "Problema ao calcular"
     else:
         valor = long(valor)
-        KB = 1024
-        MB = 1024 * 1024
-        GB = 1024 * 1024 * 1024
-        if valor < MB:
-            t = valor / KB
-            tamanho = "%s KB" % (t)
-        elif valor < GB:
-            t = valor / MB
-            tamanho = "%s MB" % (t)
+        kb = 1024
+        mb = 1024 * 1024
+        gb = 1024 * 1024 * 1024
+        if valor < mb:
+            t = valor / kb
+            tamanho = "%s KB" % t
+        elif valor < gb:
+            t = valor / mb
+            tamanho = "%s MB" % t
 
         else:
-            t = valor / MB
-            t2 = float(valor) / GB
+            t = valor / mb
+            t2 = float(valor) / gb
             tamanho = "%s MB ou %.1f GB" % (t, t2)
 
     return tamanho
 
 
-def Tradutor(palavra, dicionario='', isunicode=True):
+def eh_cover_art(endereco_da_imagem):
+    if os.path.exists(endereco_da_imagem):
+        nome = os.path.basename(endereco_da_imagem)
+        if procura_coverart.match(nome):
+            return True
+
+
+def tradutor(palavra, dicionario='', isunicode=True):
     """
 
     """
-    if isunicode == False:
+    if isunicode is False:
         pass
     else:
         palavra = palavra.encode('utf-8')
@@ -592,7 +595,7 @@ def Tradutor(palavra, dicionario='', isunicode=True):
 
     caracteres_para_escape = ['/', '.', '*', '+', '?', '|', '(', ')', '[', ']', '{', '}', '\\']
 
-    palavra_em_escape = ''
+    palavra_em_escape = ""
     for g in palavra2:
         achei = 0
         for f in caracteres_para_escape:
@@ -607,12 +610,12 @@ def Tradutor(palavra, dicionario='', isunicode=True):
 
     if dicionario == '':
         traducao = palavra
-        texto_lido = ''
         try:
+            texto_lido = ""
             with open(os.path.join(corrente, 'language', 'sample.lng'), 'r') as palavraprocurada:
                 texto = palavraprocurada.read()
 
-                patern = '(%s =.*)' % (palavra_em_escape)
+                patern = '(%s =.*)' % palavra_em_escape
                 x = re.findall(patern, texto)
 
                 if not x == []:
@@ -621,9 +624,10 @@ def Tradutor(palavra, dicionario='', isunicode=True):
                     texto_lido = texto
                     palavraprocurada.close()
 
-                    with open(os.path.join(corrente, 'language', 'sample.lng'), 'w') as palavraprocurada:
-                        escrever = texto_lido + '%s = %s\n' % (palavra, palavra)
-                        palavraprocurada.write(escrever)
+            with open(os.path.join(corrente, 'language', 'sample.lng'), 'w') as palavraprocurada:
+                escrever = texto_lido + '%s = %s\n' % (palavra, palavra)
+                palavraprocurada.write(escrever)
+
         except IOError:
 
             with open(os.path.join(corrente, 'language', 'sample.lng'), 'w') as palavraprocurada:
@@ -632,7 +636,7 @@ def Tradutor(palavra, dicionario='', isunicode=True):
         with open(dicionario, 'r') as palavraprocurada:
             texto = palavraprocurada.read()
 
-            patern = '(%s =.*)' % (palavra_em_escape)
+            patern = '(%s =.*)' % palavra_em_escape
 
             x = re.findall(patern, texto)
 
@@ -644,6 +648,7 @@ def Tradutor(palavra, dicionario='', isunicode=True):
     if isunicode:
         traducao = traducao.decode('utf-8')
     return traducao
+
 
 def retirar_exitf_imagem(lista_de_imagens):
     if not type(lista_de_imagens) == list:
@@ -661,14 +666,10 @@ def retirar_exitf_imagem(lista_de_imagens):
 
 def muda_nome_jogo(endereco_do_jogo, novo_nome):
     nome_antigo = os.path.basename(endereco_do_jogo)
-    nome_do_arquivo = os.path.basename(endereco_do_jogo)
     endereco = os.path.dirname(endereco_do_jogo)
     codigo_do_jogo = ''
     if procura_apenas_cod2.match(nome_antigo):
         codigo_do_jogo = procura_apenas_cod2.findall(nome_antigo)[0]
-        apenas_nome = nome_do_arquivo.split('.')[-2]
-    else:
-        apenas_nome = nome_do_arquivo.split('.')[-2]
 
     cont = 0
     nome_bade = novo_nome
@@ -682,13 +683,3 @@ def muda_nome_jogo(endereco_do_jogo, novo_nome):
 
 if __name__ == '__main__':
     pass
-
-
-
-
-
-
-
-
-
-
