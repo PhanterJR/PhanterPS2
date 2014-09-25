@@ -17,7 +17,7 @@ logging.basicConfig(level=logging.ERROR)
 logger = logging.getLogger(__name__)
 corrente = os.getcwd()
 imagem_check = Configuracoes('imagem_check.cfg')
-memoria = {}
+memoria = dict()
 memoria['tamanho_total_dos_jogos'] = 0
 memoria['jogos_selecionados'] = 0
 memoria['progresso'] = 0
@@ -39,6 +39,7 @@ class MeuPrograma(wx.App):
 
 
 class FramePrincipal(wx.Frame):
+
     def __init__(self, title, pos, size):
         wx.Frame.__init__(self, None, wx.ID_ANY, title, pos, size)
         if os.path.exists(os.path.join(corrente, 'language')):
@@ -152,18 +153,15 @@ class FramePrincipal(wx.Frame):
         self.SetMenuBar(Barra_de_menu)
         self.Bind(wx.EVT_CHECKBOX, self.dofilho2)
         self.Bind(wx.EVT_BUTTON, self.dofilho)
-        self.Atualizar_refresh()
+        self.atualizar_refresh()
         arquivo_de_senha = os.path.join(corrente, 'pwd')
         if not os.path.exists(arquivo_de_senha):
-            login = LoginDialog(self, True)
-            login.CenterOnParent()
-            login.ShowModal()
-            wx.Yield()
+            self.SetStatusText(tradutor(u"Ainda não foi definido uma senha para o adminstador - nome: admin, senha: admin", dicionario))
 
         self.Layout()
 
+    def atualizar_refresh(self, refresh = False):
 
-    def Atualizar_refresh(self, refresh = False):
         conf_prog = Configuracoes()
         dicionario = conf_prog.leitor_configuracao('DICIONARIO')
         if refresh == True:
@@ -182,7 +180,6 @@ class FramePrincipal(wx.Frame):
         self.jogos_e_info = zz.jogos_e_info
         self.listjogos = self.jogos_e_info[0]
         memoria['selecionado_para_copiar'] = {}
-
 
         if refresh == True:
             self.pastadefault = conf_prog.leitor_configuracao('PADRAO')
@@ -221,13 +218,10 @@ class FramePrincipal(wx.Frame):
         wx.Yield()
         meuid = 0
         for x in self.listjogos:
-
             meuid += 1
-
             valorgauge = int(float(meuid)/quantogauge*100)
             meusplash.barrinha.SetValue(valorgauge)
             wx.Yield()
-
             sizer_jogos.Add(PainelJogos(
                 self.painel_scroll, wx.ID_NEW, (0, 0), (-1, 110),
                 arquivo_do_jogo=x[0], codigo_do_jogo=x[1], nome_do_jogo=x[2], tamanho_do_jogo=x[3],
@@ -372,8 +366,6 @@ class FramePrincipal(wx.Frame):
 
         meusplash.Destroy()
 
-
-
     def AbrirIso(self, event):
         conf_prog = Configuracoes()
         dicionario = conf_prog.leitor_configuracao('DICIONARIO')
@@ -419,7 +411,7 @@ class FramePrincipal(wx.Frame):
         conf_prog = Configuracoes()
         self.pastadefault = conf_prog.leitor_configuracao('PADRAO')
         event.Skip()
-        self.Atualizar_refresh(True)
+        self.atualizar_refresh(True)
 
     def ReadFile(self, arquivosiso):
         result = VerificaJogo(arquivosiso)
@@ -483,10 +475,10 @@ class FramePrincipal(wx.Frame):
             definitivo_kkk.Show()
             definitivo_kkk.iniciarcopia()
         else:
-            login = LoginDialog(self, False)
+            login = FrameLogin(self, nova_senha=False)
             login.CenterOnParent()
-            login.ShowModal()
-            login.Destroy()
+            login.Show()
+            #login.Destroy()
             if login.autorizado == True:
 
                 lista_del = []
@@ -509,7 +501,7 @@ class FramePrincipal(wx.Frame):
                         deleta_ul.deletar_jogo_ul(end_base, novo_nome_zx)
                     else:
                         os.remove(xw[0])
-        self.Atualizar_refresh(True)
+        #self.atualizar_refresh(True)
 
     def PastaDestino(self, event):
         conf_prog = Configuracoes()
@@ -534,7 +526,7 @@ class FramePrincipal(wx.Frame):
 
         conf_prog = Configuracoes()
         self.pastadefault = conf_prog.leitor_configuracao('PADRAO')
-        self.Atualizar_refresh(True)
+        self.atualizar_refresh(True)
 
     def dofilho2(self, event):
         conf_prog = Configuracoes()
@@ -563,17 +555,18 @@ class FramePrincipal(wx.Frame):
 class MeuSplash (wx.Frame):
     conf_prog = Configuracoes()
     dicionario = conf_prog.leitor_configuracao('DICIONARIO')
-    def __init__(self, parent, ID=wx.ID_ANY , title=tradutor("Processando, Aguarde...", dicionario),
-                style=wx.NO_BORDER | wx.SIMPLE_BORDER  ,
-                duration=10500, bitmapfile=os.path.join(corrente, 'imagens', 'processando.jpg'), callback = None, gauge=False):
 
+    def __init__(self, parent, ID=wx.ID_ANY , title=tradutor("Processando, Aguarde...", dicionario),
+        style=wx.NO_BORDER | wx.SIMPLE_BORDER,
+        duration=10500, bitmapfile=os.path.join(corrente, 'imagens', 'processando.jpg'),
+        callback = None, gauge=False):
 
         bmp = wx.Image(bitmapfile, wx.BITMAP_TYPE_ANY).ConvertToBitmap()
         self.bitmap = bmp
         self.title = title
         self.gauge=gauge
 
-        size = (bmp.GetWidth(), bmp.GetHeight()+50)
+        size = (bmp.GetWidth(), bmp.GetHeight()+22)
         width = wx.SystemSettings_GetMetric(wx.SYS_SCREEN_X)
         height = wx.SystemSettings_GetMetric(wx.SYS_SCREEN_Y)
         pos = ((width-size[0])/2, (height-size[1])/2)
@@ -590,15 +583,19 @@ class MeuSplash (wx.Frame):
         #self.Bind(wx.EVT_PAINT, self.OnPaint)
         self.Bind(wx.EVT_ERASE_BACKGROUND, self.OnEraseBG)
         sizer = wx.GridBagSizer(0,0)
-        painel = wx.Panel(self, wx.ID_ANY, (0,0), (300,200))
+        painel = wx.Panel(self, wx.ID_ANY, (0,0))
+        painel.SetBackgroundColour(wx.WHITE)
+        self.painel_gauge = wx.Panel(self, wx.ID_ANY, (0,0), (-1,22))
+        self.painel_gauge.SetBackgroundColour(wx.BLACK)
         self.painel_bmp = wx.StaticBitmap(painel, wx.ID_ANY, self.bitmap, (0, 0))
 
         self.Texto = wx.StaticText(painel, wx.ID_ANY, self.title, (50, 153), (300, -1), style=wx.ALIGN_CENTER)
         font = wx.Font(15, wx.DECORATIVE, wx.NORMAL, wx.BOLD)
         self.Texto.SetFont(font)
-        self.barrinha = wx.Gauge(painel, range=100, size=(290, 20))
+        self.barrinha = wx.Gauge(self.painel_gauge, range=100, pos = (2,0), size=(395, 20))
+
         sizer.Add(self.painel_bmp, (0,0), (1,1), wx.ALL | wx.EXPAND, 0)
-        sizer.Add(self.barrinha, (1,0), (1,1), wx.ALL| wx.EXPAND,5)
+        sizer.Add(self.painel_gauge, (1,0), (1,1), wx.ALL| wx.EXPAND,0)
         painel.SetSizerAndFit(sizer)
         if self.gauge == False:
             print 'oxente'
@@ -615,10 +612,6 @@ class MeuSplash (wx.Frame):
         self.timer = SplashTimer(callback)
         self.timer.Start(duration, 1) # one-shot only
 
-    #def OnPaint(self, event):
-    #    pass
-
-
     def OnEraseBG(self, event):
         pass
 
@@ -630,11 +623,13 @@ class MeuSplash (wx.Frame):
         self.timer.Stop()
         del self.timer
         self.Destroy()
+
     def OnMouseClick(self, event):
         self.timer.Notify()
 
 
 class PainelJogos(wx.Panel):
+
     def __init__(self, parent, ID, pos, size, arquivo_do_jogo, codigo_do_jogo, nome_do_jogo, tamanho_do_jogo, partes,
                  tipo_midia, lista_cover_art, Meu_ID):
         wx.Panel.__init__(self, parent, wx.ID_ANY, pos, size, wx.EXPAND)
@@ -661,9 +656,6 @@ class PainelJogos(wx.Panel):
             retirar_exitf_imagem(self.endereco_da_imagem)
             imagem_check.mudar_configuracao(self.endereco_da_imagem, 'OK')
         imagem5 = wx.Image(self.endereco_da_imagem, wx.BITMAP_TYPE_ANY).ConvertToBitmap()
-        #except:
-        #   imagem_check.mudar_configuracao(self.endereco_da_imagem, 'Falhou')
-        #   imagem5 = wx.Image(os.path.join(corrente, 'imagens', 'erro.jpg'), wx.BITMAP_TYPE_ANY).ConvertToBitmap()
 
         new_imagem5 = wx.ImageFromBitmap(imagem5).Scale(70, 100, wx.IMAGE_QUALITY_NORMAL).ConvertToBitmap()
         mask = wx.Mask(new_imagem5, wx.BLUE)
@@ -751,6 +743,7 @@ class PainelJogos(wx.Panel):
         self.Layout()
 
     def Renomear(self, event):
+
         conf_prog = Configuracoes()
         dicionario = conf_prog.leitor_configuracao('DICIONARIO')
         self.pastadefault = conf_prog.leitor_configuracao('PADRAO')
@@ -815,6 +808,7 @@ class PainelJogos(wx.Panel):
             self.botao_renomear.SetLabel("Renomear")
 
     def Deletar(self, event):
+
         conf_prog = Configuracoes()
         dicionario = conf_prog.leitor_configuracao('DICIONARIO')
         self.pastadefault = conf_prog.leitor_configuracao('PADRAO')
@@ -858,6 +852,7 @@ class PainelJogos(wx.Panel):
             msgbox.Destroy()
 
     def ConfiguracaoJogo(self, event):
+
         conf_prog = Configuracoes()
         dicionario = conf_prog.leitor_configuracao('DICIONARIO')
         self.pastadefault = conf_prog.leitor_configuracao('PADRAO')
@@ -871,6 +866,7 @@ class PainelJogos(wx.Panel):
         self.obj_config.CenterOnParent()
 
     def CopiarPara(self, event):
+
         conf_prog = Configuracoes()
         dicionario = conf_prog.leitor_configuracao('DICIONARIO')
         nome_do_jogo = self.form1.GetValue()
@@ -888,6 +884,7 @@ class PainelJogos(wx.Panel):
         self.objcopiar.CenterOnParent()
 
     def MudarImagem(self, event):
+
         conf_prog = Configuracoes()
         dicionario = conf_prog.leitor_configuracao('DICIONARIO')
         self.pastadefault = conf_prog.leitor_configuracao('PADRAO')
@@ -965,6 +962,7 @@ class PainelJogos(wx.Panel):
 
 
 class FrameAdicionarMultiplos(wx.Frame):
+
     def __init__(self, parent, title, lista_de_jogos, total_geral, pos, size):
         wx.Frame.__init__(self, parent, wx.ID_ANY, title, pos, size)
         
@@ -1088,6 +1086,7 @@ class FrameAdicionarMultiplos(wx.Frame):
 
 
 class PainelListaDeJogos(wx.Panel):
+
     def __init__(self, parent, ID, pos, size, arquivo_do_jogo, codigo_do_jogo,
                  nome_do_jogo, tamanho_do_jogo, Meu_ID):
         wx.Panel.__init__(self, parent, wx.ID_ANY, pos, size, wx.EXPAND)
@@ -1181,7 +1180,6 @@ class PainelListaDeJogos(wx.Panel):
             nome = self.form1.GetValue()
             dados_da_memoria[0][5] = u'%s.%s' %(code, nome)
 
-
     def Selecionado(self, event):
         valor_do_radio = self.checkselecionado.GetValue()
         if valor_do_radio == True:
@@ -1198,6 +1196,7 @@ class PainelListaDeJogos(wx.Panel):
 
 
 class FrameSobre(wx.Frame):
+
     def __init__(self):
         conf_prog = Configuracoes()
         dicionario = conf_prog.leitor_configuracao('DICIONARIO')
@@ -1266,6 +1265,7 @@ class FrameSobre(wx.Frame):
 
 
 class FrameConfiguracao(wx.Frame):
+
     def __init__(self, parent, ID, title):
         wx.Frame.__init__(self, parent, ID, title, wx.DefaultPosition, style=wx.SYSTEM_MENU | wx.CAPTION | wx.CLOSE_BOX)
         self.parent = parent
@@ -1407,10 +1407,10 @@ class FrameConfiguracao(wx.Frame):
 
 
 class FrameAdicionarIso(wx.Frame):
+
     def __init__(self, parent, ID, title, endereco=('', False), codigo_do_jogo=(False, False),
                  nome_do_jogo=('NOVO_JOGO', True), tamanho_do_jogo=0, lista_de_jogos=[]):
         wx.Frame.__init__(self, parent, ID, title, wx.DefaultPosition, style=wx.SYSTEM_MENU | wx.CAPTION | wx.CLOSE_BOX)
-
 
         conf_prog = Configuracoes()
         self.config_pasta_jogos = conf_prog.leitor_configuracao('PADRAO')
@@ -1548,7 +1548,6 @@ class FrameAdicionarIso(wx.Frame):
 
         fatiar = True if valor_padrao == 1 else False
 
-        # '(origem, tipo, checado, destino, tamanho, nome, fatiar)'
         mensagem = tradutor('Copiando ', dicionario)
 
         self.Progress = ProgressCopia(self, u'%s%s' % (mensagem, self.form1.GetValue()),
@@ -1564,6 +1563,7 @@ class FrameAdicionarIso(wx.Frame):
 
 
 class CopiarPara(wx.Frame):
+
     def __init__(self, parent, ID, title, endereco_do_jogo, codigo_do_jogo, nome_do_jogo, tamanho_do_jogo=0,
                  imagem=False, cfg=False, tipo_origem='', tipo_destino=''):
         wx.Frame.__init__(self, parent, ID, title, wx.DefaultPosition, style=wx.SYSTEM_MENU | wx.CAPTION | wx.CLOSE_BOX)
@@ -2357,41 +2357,59 @@ class ProgressCopia(wx.Dialog):
             self.Destroy()
 
 
-class LoginDialog(wx.Dialog):
+class FrameLogin(wx.Dialog):
 
-    def __init__(self, parent, nova_senha=False):
-        """self, Window parent, int id=-1, String title=EmptyString,
-            Point pos=DefaultPosition, Size size=DefaultSize,
-            long style=DEFAULT_DIALOG_STYLE, String name=DialogNameStr"""
-        wx.Dialog.__init__(self, parent, wx.ID_ANY, u"Autorização", (-1, -1), (300, 150))
+    conf_prog = Configuracoes()
+    dicionario = conf_prog.leitor_configuracao("DICIONARIO")
+
+    def __init__(self, parent, title=tradutor(u"A ação deve ser autorizada", dicionario), nova_senha = False):
+
+        conf_prog = Configuracoes()
+        dicionario = conf_prog.leitor_configuracao("DICIONARIO")
+        wx.Dialog.__init__(self, parent, wx.ID_ANY, title, (-1,-1), (300,150))
         self.autorizado = False
         if nova_senha == True:
-            self.SetTitle('Adicione uma senha administrativa')
-
+            self.SetTitle(tradutor("Adicione uma senha administrativa", dicionario))
+        painel = wx.Panel(self, wx.ID_ANY)
         self.nova_senha = nova_senha
-        self.mainSizer = wx.BoxSizer(wx.VERTICAL)
-        btnSizer = wx.BoxSizer(wx.HORIZONTAL)
+        textnome = wx.StaticText(painel, label=tradutor("Nome:", dicionario),
+                                 style = wx.TE_RICH | wx.ALIGN_RIGHT |wx.ALIGN_CENTER_VERTICAL)
+        self.formnome = wx.TextCtrl(painel)
+        arquivo_de_senha = os.path.join(corrente,'pwd')
+        if not os.path.exists(arquivo_de_senha):
+            self.formnome.Enabled = False
+            self.formnome.SetValue('admin')
 
-        textsenha = wx.StaticText(self, label="Nome:")
-        self.formlogin = wx.TextCtrl(self)
-        self.addWidgets(textsenha, self.formlogin)
+        textsenha = wx.StaticText(painel, label=tradutor("Senha:", dicionario),
+                                  style = wx.TE_RICH | wx.ALIGN_RIGHT |wx.ALIGN_CENTER_VERTICAL)
 
-        textsenha = wx.StaticText(self, label="Senha:")
-        self.formsenha = wx.TextCtrl(self, style=wx.TE_PASSWORD)
-        self.addWidgets(textsenha, self.formsenha)
+        self.formsenha = wx.TextCtrl(painel, style=wx.TE_PASSWORD)
 
-        okBtn = wx.Button(self, wx.ID_OK)
-        self.Bind(wx.EVT_BUTTON, self.Confirmar, okBtn)
-        btnSizer.Add(okBtn, 0, wx.CENTER|wx.ALL, 5)
-        cancelBtn = wx.Button(self, wx.ID_CANCEL)
-        btnSizer.Add(cancelBtn, 0, wx.CENTER|wx.ALL, 5)
+        painel_botoes = wx.Panel(painel, wx.ID_ANY, style = wx.ALL | wx.EXPAND | wx.ALIGN_CENTER)
+        botaook = wx.Button(painel_botoes, wx.ID_OK)
+        self.Bind(wx.EVT_BUTTON, self.Confirmar, botaook)
+        botaocancelar = wx.Button(painel_botoes, wx.ID_CANCEL, tradutor('Cancelar',dicionario))
+        sizerbotoes = wx.GridSizer(1, 2)
+        sizerbotoes.Add(botaook, 0,  wx.ALIGN_CENTER|wx.ALL, 5)
+        sizerbotoes.Add(botaocancelar,0,  wx.ALIGN_CENTER|wx.ALL, 5)
+        painel_botoes.SetSizer(sizerbotoes)
+        painel_botoes.SetBackgroundColour(wx.RED)
 
-        self.mainSizer.Add(btnSizer, 0, wx.CENTER)
-        self.SetSizer(self.mainSizer)
+
+        sizer = wx.GridBagSizer(0, 0)
+        sizer.Add(textnome, (0, 0), (1, 1), wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_RIGHT | wx.ALL , 5)
+        sizer.Add(self.formnome, (0, 1), (1, 1), wx.ALL | wx.EXPAND, 5)
+        sizer.Add(textsenha, (1, 0), (1, 1), wx.ALIGN_RIGHT | wx.ALL | wx.EXPAND, 5)
+        sizer.Add(self.formsenha, (1, 1), (1, 1), wx.ALL | wx.EXPAND | wx.TE_PASSWORD, 5)
+        sizer.Add(painel_botoes, (2, 0), (1, 2), wx.ALL | wx.EXPAND | wx.ALIGN_CENTER, 0)
+        sizer.AddGrowableCol(1)
+
+        painel.SetSizerAndFit(sizer)
 
     def Confirmar(self, event):
+
         arquivo_de_senha = os.path.join(corrente,'pwd')
-        login = self.formlogin.GetValue()
+        login = self.formnome.GetValue()
         senha = self.formsenha.GetValue()
         senha_hash = hashlib.sha224(senha).hexdigest()
         if self.nova_senha == False:
@@ -2424,15 +2442,6 @@ class LoginDialog(wx.Dialog):
                 escrevendo = '%s\n%s' %(aberto, novo_texto)
                 escrevendopass.write(escrevendo)
         self.Destroy()
-
-
-    def addWidgets(self, lbl, txt):
-        """
-        """
-        sizer = wx.BoxSizer(wx.HORIZONTAL)
-        sizer.Add(lbl, 0, wx.ALL|wx.CENTER, 5)
-        sizer.Add(txt, 1, wx.EXPAND|wx.ALL, 5)
-        self.mainSizer.Add(sizer, 0, wx.EXPAND)
 
 if __name__ == '__main__':
     y = MeuPrograma()
