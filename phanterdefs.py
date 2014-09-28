@@ -23,6 +23,7 @@ procura_apenas_cod = re.compile(r'^/([a-zA-Z]{4}_[0-9]{3}\.[0-9]{2})')
 procura_apenas_cod2 = re.compile(r'^([a-zA-Z]{4}_[0-9]{3}\.[0-9]{2})')
 procura_apenas_cod3 = re.compile(r'([a-zA-Z]{4}_[0-9]{3}\.[0-9]{2})')
 procura_coverart = re.compile(r'(.*_COV\.[pP][Nn][Gg])|(.*_COV\.[Jj][Pp][Gg])$')
+procura_systema_de_video = re.compile(r'NTSC|PAL')
 
 
 class Configuracoes():
@@ -108,10 +109,12 @@ class VerificaJogo():
         """
         self.resultado_final = False
         self.codigo_encontrado = ""
+        self.sistema_de_video = ""
+        self.arquivoiso = arquivoiso
 
         if os.path.exists(arquivoiso):
             nome_do_arquivo = procura_cod_e_nome.findall(arquivoiso)
-            self.end_jogo = (arquivoiso, True)
+            self.end_jogo = (self.arquivoiso, True)
             self.codigo_do_jogo1 = False
             self.nome_do_jogo1 = ""
 
@@ -123,26 +126,39 @@ class VerificaJogo():
             self.nome_do_jogo2 = "NOME_DO_JOGO"
             self.codigo_do_jogo = (self.codigo_do_jogo1 if self.codigo_encontrado is False else self.codigo_encontrado,
                                    True if not self.codigo_encontrado is False else False)
+
             self.nome_do_jogo = (self.nome_do_jogo1 or self.nome_do_jogo2, True)
 
             stam = os.stat(arquivoiso)
             tamanho = stam.st_size
-            self.resultado_final = [self.end_jogo, self.codigo_do_jogo, self.nome_do_jogo, tamanho]
+            self.resultado_final = [self.end_jogo, self.codigo_do_jogo,
+                                    self.nome_do_jogo, tamanho, self.sistema_de_video]
         else:
             pass
 
-    def procura_cod_in_iso(self, endereco):
+    def procura_cod_in_iso(self, endereco=""):
+        if endereco == "":
+            endereco = self.arquivoiso
         self.codigo_encontrado = False
 
         try:
             x = iso9660.ISO9660(endereco)
             systemcnfx = x.get_file('/SYSTEM.CNF')
             systemcnf = procura_apenas_cod3.findall(systemcnfx)[0]
+            sysvideo = procura_systema_de_video.findall(systemcnfx)[0]
             self.codigo_encontrado = systemcnf
-        except iso9660.ISO9660IOError:
+            self.sistema_de_video = sysvideo
+        except:
             x = False
 
         return x
+
+    def pega_sistema_de_video(self):
+        tt = self.procura_cod_in_iso()
+        if tt is False:
+            return ""
+        else:
+            return self.sistema_de_video
 
 
 class ManipulaCfgJogo():
@@ -187,6 +203,7 @@ class ManipulaCfgJogo():
                 self.dicionario_compatibilidade[soma] = i
 
     def leitor_cfg(self, chave):
+
         try:
             resultado = self.dicionario_cfg[chave]
             if resultado == '\n' or resultado == '':
@@ -197,20 +214,18 @@ class ManipulaCfgJogo():
                     resultado = resultado[0]
         except KeyError:
             resultado = ''
-        return resultado
+        return resultado.decode('utf-8')
 
     def leitor_compatibilidade(self, chave):
 
         try:
             resultado = self.dicionario_compatibilidade[chave]
         except KeyError:
-
             resultado = ''
-
         return resultado
 
     def mudar_dict_cfg(self, chave, resultado):
-        self.dicionario_cfg[chave] = resultado
+        self.dicionario_cfg[chave] = resultado.encode('utf-8')
 
     def gravar_em_arquivo(self):
         texto = ''
@@ -228,7 +243,7 @@ class ManipulaCfgJogo():
                 texto += u'%s=%s\n' % (x, y)
         texto = texto
         with open(self.endereco_cfg, 'w') as aberto:
-            aberto.write(texto)
+            aberto.write(texto.encode('utf-8'))
 
 
 class LocalizaArt():
@@ -317,7 +332,57 @@ class LocalizaJogos():
         self.lista_total_de_jogos = self.lista_ul + self.lista_DVD + self.lista_CD
 
         self.jogos_e_info = [self.lista_total_de_jogos, self.quant_de_jogos, self.tamanho_total]
+       
 
+    def ordem_alfabetica(self, coluna = False, modo = 'crescente'):
+        """coloca a lista de jogos, SELF.JOGOS_E_INFO, em ordem alfabetica sendo:
+            @param coluna:
+                0, coloca em ordem de codigo, porem ul vem primeiro, depois DVD depois CD
+                1, coloca a coluna arquivo em ordem
+                2, coloca o codigo 
+                3, coloca o nome
+                4, coloca o tramanho em ordem
+        """
+
+        possiveis = [0, 1, 2, 3, 4, 5, 6]
+
+        if coluna is False:
+            if modo =='decrescente':
+                lista_reves = self.jogos_e_info[0]
+                lista_reves = lista_reves[::-1]
+                self.jogos_e_info = [lista_reves, self.quant_de_jogos, self.tamanho_total]
+                return self.jogos_e_info
+
+            return self.jogos_e_info
+
+        elif not coluna in possiveis:
+            if modo =='decrescente':
+                lista_reves = self.jogos_e_info[0]
+                lista_reves = lista_reves[::-1]
+                self.jogos_e_info = [lista_reves, self.quant_de_jogos, self.tamanho_total]
+                return self.jogos_e_info
+
+            return self.jogos_e_info
+        else:
+            organizador = {}
+            lista_indice = []
+            for x in self.jogos_e_info[0]:
+                if coluna == 3:
+                    cocoa = "%012d" % x[coluna]
+                    novo_indice = "%s%s%s" % (cocoa, str(x[0]),x[1])
+                else:
+                    novo_indice = "%s%s%s" % (x[coluna], str(x[0]),x[1])
+                lista_indice.append(novo_indice)
+                organizador[novo_indice] = x
+            lista_organizada = []
+            lista_indice.sort()
+            if modo == 'decrescente':
+                lista_indice = lista_indice[::-1]
+                
+            for x in lista_indice:
+                lista_organizada.append(organizador[x])
+            self.jogos_e_info = [lista_organizada, self.quant_de_jogos, self.tamanho_total]
+            return [lista_organizada, self.quant_de_jogos, self.tamanho_total]            
 
 class ManipulaUl():
 
@@ -553,6 +618,72 @@ class ManipulaUl():
             escrever.write(mudado)
 
 
+class Dicionario():
+
+    def __init__(self, dicionario=''):
+        self.keys = ""
+        self.comp = ""
+        if dicionario == "":
+            pass
+        else:
+            self.dicionario_traduzido = {}
+            with open(dicionario,  'r') as aberto:
+                self.dicionario_traduzido = aberto.readlines()
+
+    def tradutor(self, palavra, dicionario=""):
+        """
+
+        """
+        traducao = palavra
+        if not dicionario == "":
+            for x in self.dicionario_traduzido:
+                
+                if len(x.split(" = ")) == 2:
+                    y = x.split(" = ")
+                    key = y[0]
+                    
+                    if key == palavra.encode('utf-8'):
+                        traducao = y[1].strip().encode('utf-8').decode('utf-8')
+                       
+                        break
+                    else:
+                        traducao = palavra
+        return traducao
+
+    def criar_sample(self):
+        with open(os.path.join(corrente, 'phanterps2.py'), 'r') as abe:
+            f = abe.read()
+        achei = re.findall(r'Tradutor\.tradut.*["\'](.*)["\'].*dicionario', f)
+        texto = ""
+        keys = ""
+        comp = []
+        for x in achei:
+            if not x in comp:
+                texto += x + " = " + x + '\n'
+                keys += x+'\n'
+                comp.append(x)
+        with open(os.path.join(corrente, 'language', 'sample.lng'), 'w') as cop:
+            cop.write(texto)
+        self.keys = keys
+        self.comp = comp
+
+    def criar_keys(self):
+        self.criar_sample()
+        with open(os.path.join(corrente, 'language', 'keys.lng'), 'w') as cop:
+            cop.write(self.keys)
+
+    def criar_nova_linguage(self, endereco_traduzido, nome_da_linguagem):
+        with open(endereco_traduzido, 'r') as abe:
+            f = abe.readlines()
+        ct = 0
+        df = ""
+        for z in self.comp:
+            df += z + " = " + f[ct]
+            ct += 1
+        with open(os.path.join(nome_da_linguagem), 'w') as pis:
+            pis.write(df)
+
+
 def convert_tamanho(valor=''):
     if valor == '':
         tamanho = "Problema ao calcular"
@@ -581,73 +712,6 @@ def eh_cover_art(endereco_da_imagem):
         nome = os.path.basename(endereco_da_imagem)
         if procura_coverart.match(nome):
             return True
-
-
-def tradutor(palavra, dicionario='', isunicode=True):
-    """
-
-    """
-    if isunicode is False:
-        pass
-    else:
-        palavra = palavra.encode('utf-8')
-    palavra2 = palavra
-
-    caracteres_para_escape = ['/', '.', '*', '+', '?', '|', '(', ')', '[', ']', '{', '}', '\\']
-
-    palavra_em_escape = ""
-    for g in palavra2:
-        achei = 0
-        for f in caracteres_para_escape:
-            if g == f:
-                achei = 1
-            else:
-                pass
-        if achei:
-            palavra_em_escape += "\\" + g
-        else:
-            palavra_em_escape += g
-
-    if dicionario == '':
-        traducao = palavra
-        try:
-            texto_lido = ""
-            with open(os.path.join(corrente, 'language', 'sample.lng'), 'r') as palavraprocurada:
-                texto = palavraprocurada.read()
-
-                patern = '(%s =.*)' % palavra_em_escape
-                x = re.findall(patern, texto)
-
-                if not x == []:
-                    pass
-                else:
-                    texto_lido = texto
-                    palavraprocurada.close()
-
-            with open(os.path.join(corrente, 'language', 'sample.lng'), 'w') as palavraprocurada:
-                escrever = texto_lido + '%s = %s\n' % (palavra, palavra)
-                palavraprocurada.write(escrever)
-
-        except IOError:
-
-            with open(os.path.join(corrente, 'language', 'sample.lng'), 'w') as palavraprocurada:
-                palavraprocurada.write('%s = %s\n' % (palavra, palavra))
-    else:
-        with open(dicionario, 'r') as palavraprocurada:
-            texto = palavraprocurada.read()
-
-            patern = '(%s =.*)' % palavra_em_escape
-
-            x = re.findall(patern, texto)
-
-            if x == []:
-                traducao = palavra
-            else:
-                y = x[0].find(' = ')
-                traducao = x[0][y + 3:]
-    if isunicode:
-        traducao = traducao.decode('utf-8')
-    return traducao
 
 
 def retirar_exitf_imagem(lista_de_imagens):
@@ -680,6 +744,60 @@ def muda_nome_jogo(endereco_do_jogo, novo_nome):
     resultado = [os.path.join(endereco, u"%s.%s.iso" % (codigo_do_jogo, novo_nome)), codigo_do_jogo, novo_nome]
     return resultado
 
+#Ferramentas de desenvolvimento
+def lista_imagem():
+
+    """
+    lista de todas as imagens
+    @return: nadica
+    """
+    extencoes = ['png', 'jpg']
+    for z in extencoes:
+        x = glob.glob(os.path.join(corrente, 'imagens', '*.%s' % z))
+        for y in x:
+            retirar_exitf_imagem(y)
+
+
+def propagacao ():
+    programa = (os.path.join(corrente),['py', 'bin'],"")
+    imagens = (os.path.join(corrente, 'imagens'),['jpg', 'png', 'ico'],'imagens')
+    language = (os.path.join(corrente, 'language'), ['lng'],'language')
+    propagar = ['Y:\PhanterPS2', 'Z:\PhanterPS2']
+
+    lista = [programa, imagens, language]
+    for x in lista:
+        alvo = x[1]
+        for y in alvo:
+            glo = glob.glob(os.path.join(x[0], '*.%s' % y))
+            for z in glo:
+                if x[2] == 'imagens':
+                    for pro in propagar:
+                        print pro
+                        with open(z, 'rb') as lendo:
+                            lido = lendo.read()
+                        with open(os.path.join(pro, 'imagens', os.path.basename(z)), 'wb') as lendo_w:
+                            lendo_w.write(lido)
+                if x[2] == 'language':
+                    for pro in propagar:
+                        with open(z, 'rb') as lendo:
+                            lido = lendo.read()
+                        with open(os.path.join(pro, 'language', os.path.basename(z)), 'wb') as lendo_w:
+                            lendo_w.write(lido)
+                if x[2] == '':
+                    for pro in propagar:
+                        with open(z, 'rb') as lendo:
+                            lido = lendo.read()
+                        with open(os.path.join(pro, os.path.basename(z)), 'wb') as lendo_w:
+                            lendo_w.write(lido)
 
 if __name__ == '__main__':
     pass
+
+
+
+
+
+
+
+
+
