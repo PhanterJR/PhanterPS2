@@ -250,7 +250,7 @@ class LocalizaArt():
     def __init__(self, pasta_das_imagens):
 
         self.pasta_das_imagens = pasta_das_imagens
-        self.cove = [os.path.join(corrente, 'imagens'), 'sample.jpg']
+        self.cove = [os.path.join(corrente, 'imagens'), 'sample.png']
         self.cover_encontrados = {}
         if os.path.exists(self.pasta_das_imagens):
             self.lista = os.listdir(self.pasta_das_imagens)
@@ -270,7 +270,7 @@ class LocalizaArt():
                 covex = self.cover_encontrados[codigo_do_jogo + '_COV.jpg']
                 self.cove = [self.pasta_das_imagens, covex]
             except KeyError:
-                covex = 'sample.jpg'
+                covex = 'sample.png'
                 self.cove = [os.path.join(corrente, 'imagens'), covex]
 
         return self.cove
@@ -333,21 +333,24 @@ class LocalizaJogos():
 
         self.jogos_e_info = [self.lista_total_de_jogos, self.quant_de_jogos, self.tamanho_total]
        
-
-    def ordem_alfabetica(self, coluna = False, modo = 'crescente'):
-        """coloca a lista de jogos, SELF.JOGOS_E_INFO, em ordem alfabetica sendo:
+    def ordem_alfabetica(self, coluna=False, modo='crescente'):
+        """
+        coloca a lista de jogos, SELF.JOGOS_E_INFO, em ordem alfabetica sendo:
             @param coluna:
-                0, coloca em ordem de codigo, porem ul vem primeiro, depois DVD depois CD
-                1, coloca a coluna arquivo em ordem
-                2, coloca o codigo 
-                3, coloca o nome
-                4, coloca o tramanho em ordem
+                False, coloca em ordem de codigo, porem ul vem primeiro, depois DVD depois CD
+                0, coloca a coluna arquivo em ordem
+                1, coloca o codigo
+                2, coloca o nome
+                3, coloca em ordem de tamanho
+            @param modo:
+                Coloca em ordem crescente ou decrescente
+                @value modo: ['crescente', 'decrescente']
         """
 
         possiveis = [0, 1, 2, 3, 4, 5, 6]
 
         if coluna is False:
-            if modo =='decrescente':
+            if modo == 'decrescente':
                 lista_reves = self.jogos_e_info[0]
                 lista_reves = lista_reves[::-1]
                 self.jogos_e_info = [lista_reves, self.quant_de_jogos, self.tamanho_total]
@@ -356,7 +359,7 @@ class LocalizaJogos():
             return self.jogos_e_info
 
         elif not coluna in possiveis:
-            if modo =='decrescente':
+            if modo == 'decrescente':
                 lista_reves = self.jogos_e_info[0]
                 lista_reves = lista_reves[::-1]
                 self.jogos_e_info = [lista_reves, self.quant_de_jogos, self.tamanho_total]
@@ -369,9 +372,9 @@ class LocalizaJogos():
             for x in self.jogos_e_info[0]:
                 if coluna == 3:
                     cocoa = "%012d" % x[coluna]
-                    novo_indice = "%s%s%s" % (cocoa, str(x[0]),x[1])
+                    novo_indice = "%s%s%s" % (cocoa, str(x[0]), x[1])
                 else:
-                    novo_indice = "%s%s%s" % (x[coluna], str(x[0]),x[1])
+                    novo_indice = "%s%s%s" % (x[coluna], str(x[0]), x[1])
                 lista_indice.append(novo_indice)
                 organizador[novo_indice] = x
             lista_organizada = []
@@ -383,6 +386,7 @@ class LocalizaJogos():
                 lista_organizada.append(organizador[x])
             self.jogos_e_info = [lista_organizada, self.quant_de_jogos, self.tamanho_total]
             return [lista_organizada, self.quant_de_jogos, self.tamanho_total]            
+
 
 class ManipulaUl():
 
@@ -598,6 +602,7 @@ class ManipulaUl():
         lista_glob = glob.glob(os.path.join(endereco_pasta, 'ul.%s*' % crc_nome_do_jogo))
 
         for x in lista_glob:
+            print x
             os.remove(x)
 
         with open(os.path.join(endereco_pasta, 'ul.cfg'), 'r') as aberto:
@@ -758,7 +763,19 @@ def lista_imagem():
             retirar_exitf_imagem(y)
 
 
+def deletararquivos(endereco_arquivo, nome):
+
+    nome_base = os.path.basename(endereco_arquivo)
+    if nome_base[:3] == "ul.":
+        dir_base = os.path.dirname(endereco_arquivo)
+        tool_ul = ManipulaUl()
+        tool_ul.deletar_jogo_ul(dir_base, nome)
+    else:
+        os.remove(endereco_arquivo)
+
+
 def propagacao ():
+    
     programa = (os.path.join(corrente),['py', 'bin'],"")
     imagens = (os.path.join(corrente, 'imagens'),['jpg', 'png', 'ico'],'imagens')
     language = (os.path.join(corrente, 'language'), ['lng'],'language')
@@ -791,7 +808,7 @@ def propagacao ():
                             lendo_w.write(lido)
 
 if __name__ == '__main__':
-    pass
+    propagacao()
 
 
 
