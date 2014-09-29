@@ -58,7 +58,6 @@ docs/_build/
 *.dmp
 .gitignore
 .idea
-*.bin
 
 phanterps2.cfg
 language/sample.lng
