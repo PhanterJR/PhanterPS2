@@ -758,7 +758,7 @@ def lista_imagem():
     """
     extencoes = ['png', 'jpg']
     for z in extencoes:
-        x = glob.glob(os.path.join(corrente, 'imagens', '*.%s' % z))
+        x = glob.glob(os.path.join('c:\\', 'python27', '*.%s' % z))
         for y in x:
             retirar_exitf_imagem(y)
 
@@ -808,7 +808,7 @@ def propagacao ():
                             lendo_w.write(lido)
 
 if __name__ == '__main__':
-    propagacao()
+    lista_imagem()
 
 
 
