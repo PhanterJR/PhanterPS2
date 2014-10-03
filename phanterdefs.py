@@ -11,6 +11,7 @@ from contrib import pycrc32
 import glob
 from PIL import Image
 from itertools import combinations
+import exifread
 
 logging.basicConfig(level=logging.ERROR)
 logger = logging.getLogger(__name__)
@@ -32,43 +33,27 @@ class Configuracoes():
     Ler arquivos de configurações
     """
 
-    def __init__(self, nome_do_arquivo='phanterps2.cfg'):
+    def __init__(self, endereco_do_arquivo):
         """
 
         se o nome do arquivo não for pahnterps2, será criado um arquivo vazio, senão será criado um arquivo padrão
         """
-        self.nome_do_arquivo = nome_do_arquivo
+        self.endereco_do_arquivo = endereco_do_arquivo
         self.configuracoes = ''
         self.config = {}
-        try:
-            with open(os.path.join(corrente, nome_do_arquivo), 'r') as arquivo_cfg:
+
+        if os.path.exists(endereco_do_arquivo):
+            with open(endereco_do_arquivo, 'r') as arquivo_cfg:
                 self.configuracoes = arquivo_cfg.readlines()
                 for x in self.configuracoes:
                     y = x.split(' = ')
                     if len(y) == 1:
                         pass
                     else:
-                        self.config[y[0]] = y[1]
-
-        except IOError:
-
-            if nome_do_arquivo == "phanterps2.cfg":
-                with open(os.path.join(corrente, nome_do_arquivo), 'w') as arquivo_cfg:
-                    padrao = "DVD = %s\DVD\n" \
-                             "CFG = %s\CFG\n" \
-                             "DICIONARIO = \n" \
-                             "ART = %s\ART\n" \
-                             "PADRAO = %s\n" \
-                             "CD = %s\CD\n" % (corrente, corrente, corrente, corrente, corrente)
-                    arquivo_cfg.write(padrao)
-                    arquivo_cfg.close()
-            else:
-                with open(os.path.join(corrente, nome_do_arquivo), 'w') as arquivo_cfg:
-                    padrao = ""
-                    arquivo_cfg.write(padrao)
-                    arquivo_cfg.close()
+                        self.config[y[0]] = y[1].strip()
 
     def leitor_configuracao(self, chave=''):
+
         if chave == "":
             dado = ''
         else:
@@ -76,22 +61,19 @@ class Configuracoes():
                 dado = self.config[chave][:-1]
             except KeyError:
                 dado = ''
-        return dado if not dado == '\r' else ''
+        return dado.strip()
 
     def mudar_configuracao(self, chave, nova_configuracao):
         if chave == '':
             pass
         else:
-
-            self.config[chave] = nova_configuracao + '\n'
-
-            with open(os.path.join(corrente, self.nome_do_arquivo), 'w') as arquivo_cfg:
+            self.config[chave] = nova_configuracao
+            with open(self.endereco_do_arquivo, 'w') as arquivo_cfg:
                 new_config = ''
                 for x in self.config:
-                    new_config += "%s = %s" % (x, self.config[x])
-
+                    new_config += "%s = %s\n" % (x, self.config[x])
+                
                 arquivo_cfg.write(new_config)
-
 
 class VerificaJogo():
 
@@ -133,6 +115,7 @@ class VerificaJogo():
             tamanho = stam.st_size
             self.resultado_final = [self.end_jogo, self.codigo_do_jogo,
                                     self.nome_do_jogo, tamanho, self.sistema_de_video]
+
         else:
             pass
 
@@ -247,16 +230,18 @@ class ManipulaCfgJogo():
 
 
 class LocalizaArt():
-    def __init__(self, pasta_das_imagens):
-
-        self.pasta_das_imagens = pasta_das_imagens
-        self.cove = [os.path.join(corrente, 'imagens'), 'sample.png']
-        self.cover_encontrados = {}
-        if os.path.exists(self.pasta_das_imagens):
-            self.lista = os.listdir(self.pasta_das_imagens)
-            for x in self.lista:
-                if procura_coverart.match(x):
-                    self.cover_encontrados[x] = x
+    def __init__(self, pasta_das_imagens = ''):
+        if not pasta_das_imagens=="":
+            self.pasta_das_imagens = pasta_das_imagens
+            self.cove = [os.path.join(corrente, 'imagens'), 'sample.png']
+            self.cover_encontrados = {}
+            self.lista_conver = []
+            if os.path.exists(self.pasta_das_imagens):
+                self.lista = os.listdir(self.pasta_das_imagens)
+                for x in self.lista:
+                    if procura_coverart.match(x):
+                        self.cover_encontrados[x] = x
+                        self.lista_conver.append(os.path.join(self.pasta_das_imagens, x))
 
     def localiza_cover_art(self, codigo_do_jogo=''):
         self.cove = []
@@ -275,9 +260,31 @@ class LocalizaArt():
 
         return self.cove
 
+    @staticmethod
+    def eh_cover_art(endereco_da_imagem):
+        if os.path.exists(endereco_da_imagem):
+            nome = os.path.basename(endereco_da_imagem)
+            if procura_coverart.match(nome):
+                return True
+
+    @staticmethod
+    def retirar_exitf_imagem(lista_de_imagens):
+        if not type(lista_de_imagens) == list:
+            lista_de_imagens = [lista_de_imagens]
+
+        for path in lista_de_imagens:
+            with open(path, 'rb') as imagemaberta:
+                lendo_exif = exifread.process_file(imagemaberta)
+            if not lendo_exif == {}:
+                image = Image.open(path)
+                data = list(image.getdata())
+                image_without_exif = Image.new(image.mode, image.size)
+                image_without_exif.putdata(data)
+                image_without_exif.save(path)
+
 
 class LocalizaJogos():
-    def __init__(self, pasta_de_jogos):
+    def __init__(self, pasta_de_jogos, abrindo_programa = False):
         self.lista_ul = []
         self.lista_DVD = []
         self.lista_CD = []
@@ -349,16 +356,8 @@ class LocalizaJogos():
 
         possiveis = [0, 1, 2, 3, 4, 5, 6]
 
-        if coluna is False:
-            if modo == 'decrescente':
-                lista_reves = self.jogos_e_info[0]
-                lista_reves = lista_reves[::-1]
-                self.jogos_e_info = [lista_reves, self.quant_de_jogos, self.tamanho_total]
-                return self.jogos_e_info
 
-            return self.jogos_e_info
-
-        elif not coluna in possiveis:
+        if coluna is False or coluna == "" or coluna == None:
             if modo == 'decrescente':
                 lista_reves = self.jogos_e_info[0]
                 lista_reves = lista_reves[::-1]
@@ -367,25 +366,36 @@ class LocalizaJogos():
 
             return self.jogos_e_info
         else:
-            organizador = {}
-            lista_indice = []
-            for x in self.jogos_e_info[0]:
-                if coluna == 3:
-                    cocoa = "%012d" % x[coluna]
-                    novo_indice = "%s%s%s" % (cocoa, str(x[0]), x[1])
-                else:
-                    novo_indice = "%s%s%s" % (x[coluna], str(x[0]), x[1])
-                lista_indice.append(novo_indice)
-                organizador[novo_indice] = x
-            lista_organizada = []
-            lista_indice.sort()
-            if modo == 'decrescente':
-                lista_indice = lista_indice[::-1]
-                
-            for x in lista_indice:
-                lista_organizada.append(organizador[x])
-            self.jogos_e_info = [lista_organizada, self.quant_de_jogos, self.tamanho_total]
-            return [lista_organizada, self.quant_de_jogos, self.tamanho_total]            
+            if not type(coluna) == int:
+                coluna = int(coluna)
+            if not coluna in possiveis:
+                if modo == 'decrescente':
+                    lista_reves = self.jogos_e_info[0]
+                    lista_reves = lista_reves[::-1]
+                    self.jogos_e_info = [lista_reves, self.quant_de_jogos, self.tamanho_total]
+                    return self.jogos_e_info
+
+                return self.jogos_e_info
+            else:
+                organizador = {}
+                lista_indice = []
+                for x in self.jogos_e_info[0]:
+                    if coluna == 3:
+                        cocoa = "%012d" % x[coluna]
+                        novo_indice = "%s%s%s" % (cocoa, x[0], x[1])
+                    else:
+                        novo_indice = "%s%s%s" % (x[coluna], x[0], x[1])
+                    lista_indice.append(novo_indice)
+                    organizador[novo_indice] = x
+                lista_organizada = []
+                lista_indice.sort()
+                if modo == 'decrescente':
+                    lista_indice = lista_indice[::-1]
+                    
+                for x in lista_indice:
+                    lista_organizada.append(organizador[x])
+                self.jogos_e_info = [lista_organizada, self.quant_de_jogos, self.tamanho_total]
+                return [lista_organizada, self.quant_de_jogos, self.tamanho_total]            
 
 
 class ManipulaUl():
@@ -602,7 +612,7 @@ class ManipulaUl():
         lista_glob = glob.glob(os.path.join(endereco_pasta, 'ul.%s*' % crc_nome_do_jogo))
 
         for x in lista_glob:
-            print x
+            
             os.remove(x)
 
         with open(os.path.join(endereco_pasta, 'ul.cfg'), 'r') as aberto:
@@ -628,19 +638,21 @@ class Dicionario():
     def __init__(self, dicionario=''):
         self.keys = ""
         self.comp = ""
-        if dicionario == "":
-            pass
-        else:
-            self.dicionario_traduzido = {}
-            with open(dicionario,  'r') as aberto:
-                self.dicionario_traduzido = aberto.readlines()
+        self.dicionario = dicionario
+        self.dicionario_traduzido = {}
+        if not dicionario == "":
+            if os.path.exists(dicionario):
+                with open(dicionario,  'r') as aberto:
+                    self.dicionario_traduzido = aberto.readlines()
+            else:
+                self.dicionario = ""
 
-    def tradutor(self, palavra, dicionario=""):
+    def tradutor(self, palavra):
         """
 
         """
         traducao = palavra
-        if not dicionario == "":
+        if not self.dicionario == "":
             for x in self.dicionario_traduzido:
                 
                 if len(x.split(" = ")) == 2:
@@ -649,44 +661,82 @@ class Dicionario():
                     
                     if key == palavra.encode('utf-8'):
                         traducao = y[1].strip().encode('utf-8').decode('utf-8')
-                       
                         break
                     else:
                         traducao = palavra
         return traducao
 
-    def criar_sample(self):
-        with open(os.path.join(corrente, 'phanterps2.py'), 'r') as abe:
-            f = abe.read()
-        achei = re.findall(r'Tradutor\.tradut.*["\'](.*)["\'].*dicionario', f)
+    @staticmethod
+    def gerar_sample(gerar_keys = False):
+        with open('phanterps2.py', 'r') as aberto:
+            lido = aberto.read()
+        y = re.findall(r"Tradutor\.tradutor.*[\"\'](.*)[\"\']", lido)
         texto = ""
         keys = ""
-        comp = []
-        for x in achei:
-            if not x in comp:
-                texto += x + " = " + x + '\n'
-                keys += x+'\n'
-                comp.append(x)
-        with open(os.path.join(corrente, 'language', 'sample.lng'), 'w') as cop:
-            cop.write(texto)
-        self.keys = keys
-        self.comp = comp
+        for x in y:
+            s = "%s = %s\n" %(x, x)
+            texto += s
+            if gerar_keys is True:
+                keys += x + '\n'
 
-    def criar_keys(self):
-        self.criar_sample()
-        with open(os.path.join(corrente, 'language', 'keys.lng'), 'w') as cop:
-            cop.write(self.keys)
+        with open(os.path.join(corrente, 'language', 'sample.lng'), 'w') as aberto2:
+            aberto2.write(texto)
+        if gerar_keys is True:
+            with open(os.path.join(corrente, 'language', 'keys.txt'), 'w') as aberto3:
+                aberto3.write(keys)
+            with open(os.path.join(corrente, 'language', 'keys_traduzido.txt'), 'w') as aberto3:
+                aberto3.write(keys)
 
-    def criar_nova_linguage(self, endereco_traduzido, nome_da_linguagem):
-        with open(endereco_traduzido, 'r') as abe:
-            f = abe.readlines()
-        ct = 0
-        df = ""
-        for z in self.comp:
-            df += z + " = " + f[ct]
-            ct += 1
-        with open(os.path.join(nome_da_linguagem), 'w') as pis:
-            pis.write(df)
+    @staticmethod
+    def gerar_linguagem(keys, keys_traduzido = 'keys_traduzido.txt', nome_de_liguagem="traduzido.lng"):
+        with open (keys, 'r') as aberto:
+            lido_linhas = aberto.readlines()
+        with open (keys_traduzido, 'r') as aberto2:
+            lido_linhas2 = aberto2.readlines()
+        quant1 = len(lido_linhas)
+        quant2 = len(lido_linhas2)
+        lista_de_keys = []
+        if quant1 == quant2:
+            texto = ""
+            for x in range(quant1):
+                b = re.sub(r'\\t', '\\t', lido_linhas[x].strip())
+                c = re.sub(r'\\t', '\\t', lido_linhas2[x].strip())
+                texto += "%s = %s\n" %(b, c)
+        with open(os.path.join(corrente, 'language', nome_de_liguagem), 'w') as aberto2:
+            aberto2.write(texto)
+
+    @staticmethod
+    def eliminar_repetidos(arquivo):
+        with open(arquivo, 'r') as aberto:
+            lido = aberto.readlines()
+        lido.sort()
+        lista = []
+        texto = ""
+        for x in lido:
+            y = x.strip()
+            if not y in lista:
+                if not y == "":
+                    lista.append(y)
+                    texto += y+'\n'
+        with open(arquivo, 'w') as aberto:
+            aberto.write(texto)
+    @staticmethod
+    def corrigir_traducao_google(arquivo):
+        with open(arquivo, 'r') as aberto:
+            lido = aberto.readlines()
+        lista = []
+        texto = ""
+        for x in lido:
+            y = x.strip()
+            y = re.sub(r'( \\ t)', r'\\t', y, 0)
+            y = re.sub(r'( & )', '&', y, 0)
+            y = re.sub(r'(& )', '&', y, 0)
+            y = re.sub(r'( \+ )', '+', y, 0)
+            y = y+'\n'
+            texto+=y
+
+        with open(arquivo, 'w') as aberto:
+            aberto.write(texto)
 
 
 def convert_tamanho(valor=''):
@@ -712,27 +762,6 @@ def convert_tamanho(valor=''):
     return tamanho
 
 
-def eh_cover_art(endereco_da_imagem):
-    if os.path.exists(endereco_da_imagem):
-        nome = os.path.basename(endereco_da_imagem)
-        if procura_coverart.match(nome):
-            return True
-
-
-def retirar_exitf_imagem(lista_de_imagens):
-    if not type(lista_de_imagens) == list:
-        lista_de_imagens = [lista_de_imagens]
-
-    for path in lista_de_imagens:
-        image = Image.open(path)
-
-        data = list(image.getdata())
-        image_without_exif = Image.new(image.mode, image.size)
-        image_without_exif.putdata(data)
-
-        image_without_exif.save(path)
-
-
 def muda_nome_jogo(endereco_do_jogo, novo_nome):
     nome_antigo = os.path.basename(endereco_do_jogo)
     endereco = os.path.dirname(endereco_do_jogo)
@@ -750,6 +779,7 @@ def muda_nome_jogo(endereco_do_jogo, novo_nome):
     return resultado
 
 #Ferramentas de desenvolvimento
+
 def lista_imagem():
 
     """
@@ -779,7 +809,8 @@ def propagacao ():
     programa = (os.path.join(corrente),['py', 'bin'],"")
     imagens = (os.path.join(corrente, 'imagens'),['jpg', 'png', 'ico'],'imagens')
     language = (os.path.join(corrente, 'language'), ['lng'],'language')
-    propagar = ['Y:\PhanterPS2', 'Z:\PhanterPS2']
+    propagar_para_lunix_e_xp = ['Y:\PhanterPS2', 'Z:\PhanterPS2', 'C:\python27\PhanterPS2']
+
 
     lista = [programa, imagens, language]
     for x in lista:
@@ -788,33 +819,29 @@ def propagacao ():
             glo = glob.glob(os.path.join(x[0], '*.%s' % y))
             for z in glo:
                 if x[2] == 'imagens':
-                    for pro in propagar:
-                        print pro
+                    if not os.path.exists(os.path.join(pro, 'imagens')):
+                        os.makedirs(os.path.join(pro, 'imagens'))
+                    for pro in propagar_para_lunix_e_xp:
                         with open(z, 'rb') as lendo:
                             lido = lendo.read()
                         with open(os.path.join(pro, 'imagens', os.path.basename(z)), 'wb') as lendo_w:
                             lendo_w.write(lido)
                 if x[2] == 'language':
-                    for pro in propagar:
+                    if not os.path.exists(os.path.join(pro, 'language')):
+                        os.makedirs(os.path.join(pro, 'language'))
+                    for pro in propagar_para_lunix_e_xp:
                         with open(z, 'rb') as lendo:
                             lido = lendo.read()
                         with open(os.path.join(pro, 'language', os.path.basename(z)), 'wb') as lendo_w:
                             lendo_w.write(lido)
                 if x[2] == '':
-                    for pro in propagar:
+                    for pro in propagar_para_lunix_e_xp:
                         with open(z, 'rb') as lendo:
                             lido = lendo.read()
                         with open(os.path.join(pro, os.path.basename(z)), 'wb') as lendo_w:
                             lendo_w.write(lido)
 
 if __name__ == '__main__':
-    lista_imagem()
-
-
-
-
-
-
-
+    pass
 
 
