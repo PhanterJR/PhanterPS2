@@ -660,7 +660,6 @@ class Dicionario():
                         break
                     else:
                         traducao = palavra
-        print (traducao,)
         return traducao
 
     @staticmethod

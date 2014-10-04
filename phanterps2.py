@@ -169,7 +169,6 @@ class FramePrincipal(wx.Frame):
         fp_imagem_classificacao = wx.Image(os.path.join(corrente, 'imagens', 'classificar.png'), wx.BITMAP_TYPE_PNG).ConvertToBitmap()
         fp_imagem_checks = wx.Image(os.path.join(corrente, 'imagens', 'checks.png'), wx.BITMAP_TYPE_PNG).ConvertToBitmap()
 
-        
 
         # diminui a imagem para 16x16#
         new_fp_imagem_iso = wx.ImageFromBitmap(fp_imagem_iso).Scale(16, 16, wx.IMAGE_QUALITY_HIGH).ConvertToBitmap()
@@ -376,23 +375,118 @@ class FramePrincipal(wx.Frame):
             sizer_jogos = wx.GridSizer(cols=1, hgap=0, vgap=0)
         else:
             sizer_jogos = wx.GridSizer(cols=2, hgap=0, vgap=0)
-        
-        for x in self.listjogos:
-            meuid += 1
-            valorgauge = int(float(meuid)/quantogauge*100)
-            self.meusplash.barrinha.SetValue(valorgauge)
-            wx.Yield()
-            self.painel_jogo = PainelJogos(
-                self.painel_scroll, wx.ID_NEW, (0, 0), (-1, 110),
-                arquivo_do_jogo=x[0], codigo_do_jogo=x[1], nome_do_jogo=x[2], tamanho_do_jogo=x[3],
-                partes=x[4], tipo_midia=x[5], lista_cover_art=self.imagens_jogos, Meu_ID=meuid)
-            self.list_de_checks.append(self.painel_jogo)
-            sizer_jogos.Add(self.painel_jogo, 0, wx.ALIGN_CENTER | wx.ALL | wx.EXPAND, 5)
-            if refresh == True:
-                self.SendSizeEvent()
-            if not 50%meuid:
-                self.meusplash.painel_bmp.SetBitmap(self.splashbmp)
-                self.meusplash.Texto.SetLabel(self.Tradutor.tradutor('Localizando jogos...'))
+###################
+
+        if len(self.listjogos) == 0:
+            if self.dicionario == '':
+                self.codigo_html = u'''
+                <html>
+                <body bgcolor="#C7C7C7">
+                <center><table bgcolor="#AAAAAA"  width="100%" cellspacing="0"
+                cellpadding="0" border="1">
+                <tr>
+                <td align="center"><h2>Bemvindo ao PhanterPS2</h2></br><h5>versão 1.1</h5></td>
+                </tr>
+                </table>
+                <br>
+                <br>
+                <b>maiores informações acesse: http://www.conexaodidata.com.br/phanterps2</b>
+                <br>
+                </center>
+                <p>O <b>PhanterPS2</b> foi desenvolvido por <b>PhanterJR</b>, sócio-proprietário da Conexão Didata.
+                </p>
+                <p>PhanterPS2: Copyright &copy; 2014 PhanterJR - Licença GPL2<br>
+                https://github.com/PhanterJR/PhanterPS2</p>
+                
+
+                <p align="center"><b>O QUE SE DEVE FAZER AO INICIAR O PROGRAMA?</b></p>
+                <hr>
+                <p><b>1º - Deve-se configurá-lo</b><br>
+                 - Para isso basta clicar na engrenagem acima ou no menu configurações --> Configurações.<br>
+                 - Depois de aberto deve-se primeiro carregar o seu arquivo de tradução, diponíveis em pt-BR, es-ES e en-US.<br>
+                 - Em seguida escolher a pasta dos jogos de PS2, de preverencia com maior espaço em disco.
+               </p>
+               <hr>
+                <p><b>2º - Configurar uma senha</b><br>
+                - Clique no botão de uma pessoa com uma chave ou no menu configurações --> Mudar Senha<br>
+                O padrão é: nome: admin, senha: admin.
+                </p>
+                <hr>
+                <p>
+                <b>3º - Adicionar o jogos e se divertir</b><br>
+                 - Pode ser adicionado de 2 modos, 1 jogo por vez ou multiplos jogos, basta clicar nos respectivos botões ou ir no menu arquivo.
+                </p>
+                <hr>
+                <p>
+                <b>OBS.: </b>Em alguns casos é necessário reiniciar o PC ou utilizar o programa com direitos adminstrativos, para isso basta abrir o PhanterPS2FULL.
+                </p>
+                </body>
+                </html>'''
+            else:
+                self.codigo_html = u'''
+                <html>
+                <body bgcolor="#C7C7C7">
+                <center><table bgcolor="#AAAAAA"  width="100%" cellspacing="0"
+                cellpadding="0" border="1">
+                <tr>
+                <td align="center"><h2>Welcome PhanterPS2</h2></br><h5>version 1.1</h5></td>
+                </tr>
+                </table>
+                <br>
+                <br>
+                <b>visit: http://www.conexaodidata.com.br/phanterps2</b>
+                <br>
+                </center>
+                <p>The <b>PhanterPS2</b> was developed by <b>PhanterJR</b>, co-owner of Conexão Didata. .
+                </p>
+                <p>PhanterPS2: Copyright &copy; 2014 PhanterJR - License GPL2<br>
+                https://github.com/PhanterJR/PhanterPS2</p>
+                
+
+                <p align="center"><b>WHAT SHOULD YOU DO TO START THE PROGRAM?</b></p>
+                <hr>
+                <p><b>1º - Config</b><br>
+                 - Click the config button or the Settins menu -> Settins.<br>
+                 - Setting translate file. pt-BR, es-ES or en-US.<br>
+                 - Choose games PS2 folder.
+               </p>
+               <hr>
+                <p><b>2º - Config password</b><br>
+                - Click the password button or the Settins menu --> change password<br>
+                The default is: login: admin, password:admin.
+                </p>
+                <hr>
+                <p>
+                <b>3º - Add iso ps2 games.</b><br>
+                 - Click in button Add ISO games or Add Multiple ISO games. Or archive menu.
+                </p>
+                <hr>
+                <p>
+                <b>OBS.: </b>You can use PhanterPS2FULL for admin level.
+                </p>
+                </body>
+                </html>'''
+
+            self.html = wx.html.HtmlWindow(self.painel_scroll, style = wx.BORDER_DOUBLE)
+            self.html.SetPage(self.codigo_html)
+            sizer_jogos.Add(self.html, 0, wx.ALIGN_CENTER | wx.ALL | wx.EXPAND, 5)
+        else:
+            for x in self.listjogos:
+                meuid += 1
+                valorgauge = int(float(meuid)/quantogauge*100)
+                self.meusplash.barrinha.SetValue(valorgauge)
+                wx.Yield()
+                self.painel_jogo = PainelJogos(
+                    self.painel_scroll, wx.ID_NEW, (0, 0), (-1, 110),
+                    arquivo_do_jogo=x[0], codigo_do_jogo=x[1], nome_do_jogo=x[2], tamanho_do_jogo=x[3],
+                    partes=x[4], tipo_midia=x[5], lista_cover_art=self.imagens_jogos, Meu_ID=meuid)
+                self.list_de_checks.append(self.painel_jogo)
+                sizer_jogos.Add(self.painel_jogo, 0, wx.ALIGN_CENTER | wx.ALL | wx.EXPAND, 5)
+                if refresh == True:
+                    self.SendSizeEvent()
+                if not 50%meuid:
+                    self.meusplash.painel_bmp.SetBitmap(self.splashbmp)
+                    self.meusplash.Texto.SetLabel(self.Tradutor.tradutor('Localizando jogos...'))
         self.painel_scroll.SetWindowStyleFlag(wx.ALIGN_CENTER | wx.ALL | wx.EXPAND | wx.BORDER_DOUBLE)
         self.painel_scroll.SetSizer(sizer_jogos)
         self.painel_scroll.SetScrollbars(1, 1, -1, -1)
@@ -760,7 +854,6 @@ class FramePrincipal(wx.Frame):
             x.form_tamanho_arq.SetBackgroundColour(self.Default_color_painel_jogo)
             x.Refresh()
 
-    
     def dofilho(self, event):
         self.conf_prog = Configuracoes(memoria['arquivo_configuracao'])
         self.dicionario = memoria['configuracao']['DICIONARIO']
@@ -1624,7 +1717,6 @@ class FrameSobre(wx.Frame):
         logo = wx.Image(os.path.join(corrente, 'imagens', 'conexaodidata.png'), wx.BITMAP_TYPE_ANY).ConvertToBitmap()
         logocolocado = wx.StaticBitmap(painel_principal, wx.ID_ANY, logo, (0,0))
         
-
         if self.dicionario == "":
 
             self.codigo_html = u'''
