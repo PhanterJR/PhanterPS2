@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*- 
+# Versão 1.1
 # Copyright (c) 2014 PhanterJR
 # https://github.com/PhanterJR
 # Licença LGPL
@@ -6,7 +7,6 @@
 import wx
 import wx.html
 import os
-import logging
 from phanterdefs import Dicionario, Configuracoes, LocalizaArt, LocalizaJogos, convert_tamanho,\
     VerificaJogo, ManipulaUl, muda_nome_jogo, ManipulaCfgJogo, deletararquivos
 import glob
@@ -15,10 +15,7 @@ import time
 import hashlib
 import webbrowser
 
-logging.basicConfig(level=logging.ERROR)
-logger = logging.getLogger(__name__)
 corrente = os.getcwd()
-
 memoria = dict()
 memoria['tamanho_total_dos_jogos'] = 0
 memoria['jogos_selecionados'] = 0
@@ -1286,7 +1283,6 @@ class PainelJogos(wx.Panel):
                     destinodfg = os.path.join(pasta_art, nome_da_imagem)
                     with open(os.path.join(self.pastadefault, 'ART', destinodfg), 'wb') as binaimagem:
                         binaimagem.write(conteudo)
- ################
                 leinto_confi = Configuracoes(os.path.join(memoria['arquivo_imagemcheck']))
                 leinto_confi.mudar_configuracao(destinodfg, 'OK')
                 i = wx.Image(os.path.join(pasta_art, nome_da_imagem), wx.BITMAP_TYPE_ANY).ConvertToBitmap()
@@ -1510,11 +1506,9 @@ class PainelListaDeJogos(wx.Panel):
         self.form0 = wx.TextCtrl(self, wx.ID_ANY, self.codigo_do_jogo, (0, 0), (85, -1), style=wx.TE_RICH)
         self.Bind(wx.EVT_TEXT, self.MudarCodigoNome, self.form0)
 
-
         if not self.status == "OK":
             self.form0.SetToolTipString(self.Tradutor.tradutor(u'Digite um código Válido'))
             self.form0.SetBackgroundColour(wx.RED)
-
 
         self.form1 = wx.TextCtrl(self, wx.ID_ANY, nome_do_jogo[0], (0, 0), (250, -1), style=wx.TE_RICH)
         self.Bind(wx.EVT_TEXT, self.MudarCodigoNome, self.form1)
@@ -1556,8 +1550,6 @@ class PainelListaDeJogos(wx.Panel):
         self.form4.Enabled = False
         linha = wx.StaticLine(self, id=wx.ID_ANY, pos=(0, 0), size=(-1, -1),
                               style=wx.LI_HORIZONTAL | wx.BORDER_DOUBLE)
-
-
 
         self.MeuGridsizer = wx.GridBagSizer(0, 5)
         if self.Meu_ID == 1:
@@ -1641,7 +1633,7 @@ class FrameSobre(wx.Frame):
             <center><table bgcolor="#AAAAAA"  width="100%" cellspacing="0"
             cellpadding="0" border="1">
             <tr>
-            <td align="center"><h2>PhanterPS2</h2></br><h5>versão 1.0</h5></td>
+            <td align="center"><h2>PhanterPS2</h2></br><h5>versão 1.1</h5></td>
             </tr>
             </table>
             <br>
@@ -1693,7 +1685,16 @@ class FrameSobre(wx.Frame):
             Copyright © 1995-2011 by Fredrik Lundh<br>
             Licença LGPL<br>
             https://github.com/python-pillow
-            </p>        
+            </p>
+            <hr>
+            <p>
+            <b>ExifRead</b><br>
+            Modulo ExifRead<br>
+            Copyright (c) 2002-2007 Gene Cash<br>
+            Copyright (c) 2007-2013 Ianaré Sévi and contributors<br>
+            Licença BSD<br>
+            https://github.com/ianare/exif-py
+            </p>
             </body>
             </html>'''
         else:
@@ -1703,7 +1704,7 @@ class FrameSobre(wx.Frame):
             <center><table bgcolor="#AAAAAA"  width="100%" cellspacing="0"
             cellpadding="0" border="1">
             <tr>
-            <td align="center"><h2>PhanterPS2</h2></br><h5>version 1.0</h5></td>
+            <td align="center"><h2>PhanterPS2</h2></br><h5>version 1.1</h5></td>
             </tr>
             </table>
             <br>
@@ -1755,6 +1756,15 @@ class FrameSobre(wx.Frame):
             Copyright © 1995-2011 by Fredrik Lundh<br>
             License LGPL<br>
             https://github.com/python-pillow
+            </p>
+            <hr>
+            <p>
+            <b>ExifRead</b><br>
+            Module ExifRead<br>
+            Copyright (c) 2002-2007 Gene Cash<br>
+            Copyright (c) 2007-2013 Ianaré Sévi and contributors<br>
+            License BSD<br>
+            https://github.com/ianare/exif-py
             </p>  
             </body>
             </html>'''

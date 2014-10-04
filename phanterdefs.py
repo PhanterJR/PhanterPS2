@@ -3,7 +3,6 @@
 # https://github.com/PhanterJR
 # Licença LGPL
 
-import logging
 import os
 import re
 from contrib import iso9660
@@ -13,11 +12,7 @@ from PIL import Image
 from itertools import combinations
 import exifread
 
-logging.basicConfig(level=logging.ERROR)
-logger = logging.getLogger(__name__)
-
 corrente = os.getcwd()
-
 procura_cod_e_nome = re.compile(r'([a-zA-Z]{4}_[0-9]{3}\.[0-9]{2}\..*\.[iI][sS][oO])$')
 procura_nome_e_cod_no_ul = re.compile(r'([ a-zA-Z0-9]*.*ul\.[ a-zA-Z0-9]{4}_[0-9]{3}\.[0-9]{2})')
 procura_apenas_cod = re.compile(r'^/([a-zA-Z]{4}_[0-9]{3}\.[0-9]{2})')
@@ -660,10 +655,12 @@ class Dicionario():
                     key = y[0]
                     
                     if key == palavra.encode('utf-8'):
-                        traducao = y[1].strip().encode('utf-8').decode('utf-8')
+
+                        traducao = y[1].strip().decode('utf-8')
                         break
                     else:
                         traducao = palavra
+        print (traducao,)
         return traducao
 
     @staticmethod
@@ -790,7 +787,7 @@ def lista_imagem():
     for z in extencoes:
         x = glob.glob(os.path.join('c:\\', 'python27', '*.%s' % z))
         for y in x:
-            retirar_exitf_imagem(y)
+            LocalizaArt().retirar_exitf_imagem(y)
 
 
 def deletararquivos(endereco_arquivo, nome):
