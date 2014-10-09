@@ -1547,8 +1547,8 @@ class FrameAdicionarMultiplos(wx.Frame):
                 with open(os.path.join(dest_cfg, nom_cfg),'w') as grav_cfg:
                     grav_cfg.write(texto_cfg.encode('utf-8'))
             else:
-                Configuracoes(os.path.join(destino, "CFG", nome_cfg)).mudar_configuracao('Region', sis_cfg)
-                Configuracoes(os.path.join(destino, "CFG", nome_cfg)).mudar_configuracao('Title', ap_nome_cfg)
+                Configuracoes(os.path.join(self.pastadefault, "CFG", nom_cfg)).mudar_configuracao('Region', sis_cfg)
+                Configuracoes(os.path.join(self.pastadefault, "CFG", nom_cfg)).mudar_configuracao('Title', ap_nome_cfg)
         self.Progress = ProgressCopia(self,
                                         self.Tradutor.tradutor('Copiando arquivos selecionados'), lista_de_arquivos)
         self.Progress.Show()
