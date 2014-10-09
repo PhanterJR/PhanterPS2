@@ -20,7 +20,7 @@
   !define MUI_HEADERIMAGE_RIGHT
   !define MUI_HEADERIMAGE_BITMAP "pequeno.bmp"
 
-  OutFile "SetupPhanter1.2.exe"
+  OutFile "SetupPhanterPS2_1.2.exe"
 
   ;Default installation folder
   InstallDir "$PROGRAMFILES\PhanterPS2"
