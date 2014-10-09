@@ -20,7 +20,7 @@
   !define MUI_HEADERIMAGE_RIGHT
   !define MUI_HEADERIMAGE_BITMAP "pequeno.bmp"
 
-  OutFile "SETUP.exe"
+  OutFile "SetupPhanter1.2.exe"
 
   ;Default installation folder
   InstallDir "$PROGRAMFILES\PhanterPS2"
@@ -237,8 +237,8 @@ FunctionEnd
     !insertmacro MUI_DESCRIPTION_TEXT ${SecDummy} "Instala o programa PhanterPS2 - Install the program PhanterPS2"
     !insertmacro MUI_DESCRIPTION_TEXT ${SecDummylinks} "Cria links no desktop e no Menu  Iniciar - Create Desktop links and Start Menu links"
     !insertmacro MUI_DESCRIPTION_TEXT ${SecDummysource} "Copiar source-code - Copy source-code"
-    !insertmacro MUI_DESCRIPTION_TEXT ${SecDummyespanhol} "Suporte ao Espanhol - Apoyo en el idioma español"
-    !insertmacro MUI_DESCRIPTION_TEXT ${SecDummyingles} "Suporte ao Inglês - English suport"
+    !insertmacro MUI_DESCRIPTION_TEXT ${SecDummyespanhol} "Suporte ao Espanhol - Apoyo en el idioma espanol"
+    !insertmacro MUI_DESCRIPTION_TEXT ${SecDummyingles} "Suporte ao Ingles - English suport"
   !insertmacro MUI_FUNCTION_DESCRIPTION_END
 
  
