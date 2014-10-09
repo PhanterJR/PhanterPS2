@@ -2199,6 +2199,8 @@ class CopiarPara(wx.Frame):
         icone = wx.Icon(os.path.join(corrente, 'imagens', 'icon.ico'), wx.BITMAP_TYPE_ICO)
         self.conf_prog = Configuracoes(memoria['arquivo_configuracao'])
         self.dicionario = memoria['configuracao']['DICIONARIO']
+        self.pastapadraocfg = memoria['configuracao']['CFG']
+
         self.Tradutor = Dicionario(self.dicionario)
         self.SetIcon(icone)
         self.endereco_do_jogo = endereco_do_jogo
@@ -2206,7 +2208,11 @@ class CopiarPara(wx.Frame):
         self.nome_do_jogo = nome_do_jogo
         self.tamanho_do_jogo = tamanho_do_jogo
         self.imagem = imagem
-        self.cfg = cfg
+        if os.path.exists(os.path.join(self.pastapadraocfg, "%s.cfg" %self.codigo_do_jogo)):
+            self.cfg = os.path.join(self.pastapadraocfg, "%s.cfg" %self.codigo_do_jogo)
+        else:
+            self.cfg = cfg
+
         self.tipo_origem = tipo_origem
         self.tipo_destino = tipo_destino
         self.lista_a_ser_copiada = []
@@ -2287,7 +2293,7 @@ class CopiarPara(wx.Frame):
                 self.check1.SetToolTipString(
                     self.Tradutor.tradutor(u'Uma imagem foi localizada, se marcado será adicionada'))
                 self.check1.SetValue(True)
-                if not eh_cover_art(self.imagem):
+                if not LocalizaArt().eh_cover_art(self.imagem):
                     self.check1.SetToolTipString(
                         self.Tradutor.tradutor(u'Não foi localizado imagem, se marcado será adicionado a imagem padrão'))
                     self.check1.SetValue(False)
