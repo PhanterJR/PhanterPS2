@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- 
-# Versão 1.2
+# Versão 1.3
 # Copyright (c) 2014 PhanterJR
 # https://github.com/PhanterJR
 # Licença LGPL
@@ -385,7 +385,7 @@ class FramePrincipal(wx.Frame):
                 <center><table bgcolor="#AAAAAA"  width="100%" cellspacing="0"
                 cellpadding="0" border="1">
                 <tr>
-                <td align="center"><h2>Bemvindo ao PhanterPS2</h2></br><h5>versão 1.2</h5></td>
+                <td align="center"><h2>Bemvindo ao PhanterPS2</h2></br><h5>versão 1.3</h5></td>
                 </tr>
                 </table>
                 <br>
@@ -429,7 +429,7 @@ class FramePrincipal(wx.Frame):
                 <center><table bgcolor="#AAAAAA"  width="100%" cellspacing="0"
                 cellpadding="0" border="1">
                 <tr>
-                <td align="center"><h2>Welcome PhanterPS2</h2></br><h5>version 1.2</h5></td>
+                <td align="center"><h2>Welcome PhanterPS2</h2></br><h5>version 1.3</h5></td>
                 </tr>
                 </table>
                 <br>
@@ -1725,7 +1725,7 @@ class FrameSobre(wx.Frame):
             <center><table bgcolor="#AAAAAA"  width="100%" cellspacing="0"
             cellpadding="0" border="1">
             <tr>
-            <td align="center"><h2>PhanterPS2</h2></br><h5>versão 1.2</h5></td>
+            <td align="center"><h2>PhanterPS2</h2></br><h5>versão 1.3</h5></td>
             </tr>
             </table>
             <br>
@@ -1796,7 +1796,7 @@ class FrameSobre(wx.Frame):
             <center><table bgcolor="#AAAAAA"  width="100%" cellspacing="0"
             cellpadding="0" border="1">
             <tr>
-            <td align="center"><h2>PhanterPS2</h2></br><h5>version 1.2</h5></td>
+            <td align="center"><h2>PhanterPS2</h2></br><h5>version 1.3</h5></td>
             </tr>
             </table>
             <br>
