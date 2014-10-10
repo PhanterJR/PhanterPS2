@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- 
-# Versão 1.3
+# Versão 1.4
 # Copyright (c) 2014 PhanterJR
 # https://github.com/PhanterJR
 # Licença LGPL
@@ -385,7 +385,7 @@ class FramePrincipal(wx.Frame):
                 <center><table bgcolor="#AAAAAA"  width="100%" cellspacing="0"
                 cellpadding="0" border="1">
                 <tr>
-                <td align="center"><h2>Bemvindo ao PhanterPS2</h2></br><h5>versão 1.3</h5></td>
+                <td align="center"><h2>Bemvindo ao PhanterPS2</h2></br><h5>versão 1.4</h5></td>
                 </tr>
                 </table>
                 <br>
@@ -404,7 +404,7 @@ class FramePrincipal(wx.Frame):
                 <p><b>1º - Deve-se configurá-lo</b><br>
                  - Para isso basta clicar na engrenagem acima ou no menu configurações --> Configurações.<br>
                  - Depois de aberto deve-se primeiro carregar o seu arquivo de tradução, diponíveis em pt-BR, es-ES e en-US.<br>
-                 - Em seguida escolher a pasta dos jogos de PS2, de preverencia com maior espaço em disco.
+                 - Em seguida escolher a pasta dos jogos de PS2, de preferencia com maior espaço em disco.
                </p>
                <hr>
                 <p><b>2º - Configurar uma senha</b><br>
@@ -429,7 +429,7 @@ class FramePrincipal(wx.Frame):
                 <center><table bgcolor="#AAAAAA"  width="100%" cellspacing="0"
                 cellpadding="0" border="1">
                 <tr>
-                <td align="center"><h2>Welcome PhanterPS2</h2></br><h5>version 1.3</h5></td>
+                <td align="center"><h2>Welcome PhanterPS2</h2></br><h5>version 1.4</h5></td>
                 </tr>
                 </table>
                 <br>
@@ -1725,7 +1725,7 @@ class FrameSobre(wx.Frame):
             <center><table bgcolor="#AAAAAA"  width="100%" cellspacing="0"
             cellpadding="0" border="1">
             <tr>
-            <td align="center"><h2>PhanterPS2</h2></br><h5>versão 1.3</h5></td>
+            <td align="center"><h2>PhanterPS2</h2></br><h5>versão 1.4</h5></td>
             </tr>
             </table>
             <br>
@@ -1796,7 +1796,7 @@ class FrameSobre(wx.Frame):
             <center><table bgcolor="#AAAAAA"  width="100%" cellspacing="0"
             cellpadding="0" border="1">
             <tr>
-            <td align="center"><h2>PhanterPS2</h2></br><h5>version 1.3</h5></td>
+            <td align="center"><h2>PhanterPS2</h2></br><h5>version 1.4</h5></td>
             </tr>
             </table>
             <br>
@@ -2843,8 +2843,8 @@ class ProgressCopia(wx.Dialog):
                         s = os.stat(g)
                         self.tamanho_desse_arquivo = s.st_size
 
-                        self.arquivo_destino = "%s.%02d" % (self.arquivo_destino, contgh)
-                        with open(self.arquivo_destino, "wb") as self.destino_aberto:
+                        arquivo_destino = "%s.%02d" % (self.arquivo_destino, contgh)
+                        with open(arquivo_destino, "wb") as self.destino_aberto:
                             with open(g, "rb") as origem_aberto:
                                 while self.comandocancelar:
                                     y = origem_aberto.read(self.BUFFER)
