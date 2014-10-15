@@ -3,7 +3,7 @@ PhanterPS2
 
 OBJETIVO DO PROGRAMA
 
-	Programa com o objetivo manipular imagens de jogos de PS2 destinados ao uso com o OPL.
+	Programa com o objetivo manipular imagens ISO de jogos de PS2 destinados ao uso com o OPL.
 
 	primeiramente será desenvolvido a interface gráfica usando o wxPython.
 
@@ -14,7 +14,9 @@ DEPENDÊNCIAS
 
 	wxpython3 (fonte: http://www.wxpython.org/download.php)
 
-	pywin32 (em windows) (fonte: http://sourceforge.net/projects/pywin32/files/?source=navbar)
+	exifread (fonte: https://pypi.python.org/pypi/ExifRead)
+	
+	Pilow (fonte: https://pypi.python.org/pypi/Pillow)
 
 
 QUAL A MOTIVAÇÃO?
