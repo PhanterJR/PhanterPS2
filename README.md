@@ -10,9 +10,10 @@ OBJETIVO DO PROGRAMA
 
 DEPENDÊNCIAS
 
-	Alguns módulos devem estar presentes para o devido funcionamento, são eles:
+	Além do python 2.6 ou superior (Com exceção da família Python 3) 
+	alguns módulos devem estar presentes para o devido funcionamento, são eles:
 
-	wxpython3 (fonte: http://www.wxpython.org/download.php)
+	wxpython2.9 ou superior (fonte: http://www.wxpython.org/download.php)
 
 	exifread (fonte: https://pypi.python.org/pypi/ExifRead)
 	
